@@ -82,4 +82,4 @@ SpendWise uses SQLite. The database is created automatically when the applicatio
 
 ## Author
 
-Built as a Python portfolio project.
+Built by **Rachit Kaushik**
