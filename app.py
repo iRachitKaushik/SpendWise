@@ -1,9 +1,9 @@
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 
 from datetime import date
+from components.styles import load_css
 
 from database.db import initialize_database
 from services.transactions import (
@@ -33,38 +33,7 @@ st.set_page_config(
 # CUSTOM CSS
 # --------------------------------------------------
 
-st.markdown("""
-<style>
-    .stApp {
-        background-color: #0e1117;
-        color: #f1f5f9;
-    }
-
-    [data-testid="stSidebar"] {
-        background-color: #151a23;
-    }
-
-    [data-testid="stMetric"] {
-        background-color: #1b2330;
-        border: 1px solid #303a49;
-        padding: 18px;
-        border-radius: 12px;
-    }
-
-    div[data-testid="stMetricValue"] {
-        color: #34d399;
-    }
-
-    h1, h2, h3 {
-        color: #f8fafc;
-    }
-
-    .subtitle {
-        color: #94a3b8;
-        font-size: 14px;
-    }
-</style>
-""", unsafe_allow_html=True)
+load_css()
 
 
 # --------------------------------------------------
@@ -81,10 +50,7 @@ initialize_database()
 st.sidebar.title("💰 SpendWise")
 st.sidebar.caption("Personal Finance Analytics")
 
-page = st.sidebar.radio(
-    "Navigation",
-    ["Dashboard", "Transactions", "Add Transaction"]
-)
+page = st.sidebar.radio("Navigation", ["Dashboard", "Transactions", "Add Transaction"])
 
 st.sidebar.divider()
 st.sidebar.caption("Built with Python, SQLite & Streamlit")
@@ -108,34 +74,23 @@ if page == "Dashboard":
     st.title("Financial Overview")
     st.markdown(
         '<p class="subtitle">Monitor your financial performance.</p>',
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
     summary = calculate_summary(transactions)
 
     # KPI CARDS
 
-    col1, col2, col3, col4 = st.columns(4)
+    with st.container(border=True):
+        col1, col2, col3, col4 = st.columns(4)
 
-    col1.metric(
-        "Total Income",
-        f"₹{summary['total_income']:,.2f}"
-    )
+        col1.metric("Total Income", f"₹{summary['total_income']:,.2f}")
 
-    col2.metric(
-        "Total Expenses",
-        f"₹{summary['total_expenses']:,.2f}"
-    )
+        col2.metric("Total Expenses", f"₹{summary['total_expenses']:,.2f}")
 
-    col3.metric(
-        "Current Balance",
-        f"₹{summary['balance']:,.2f}"
-    )
+        col3.metric("Current Balance", f"₹{summary['balance']:,.2f}")
 
-    col4.metric(
-        "Savings Rate",
-        f"{summary['savings_rate']:.1f}%"
-    )
+        col4.metric("Savings Rate", f"{summary['savings_rate']:.1f}%")
 
     st.divider()
 
@@ -179,10 +134,7 @@ if page == "Dashboard":
                     y="amount",
                     color="amount",
                     title="Category-wise Expenses",
-                    labels={
-                        "category": "Category",
-                        "amount": "Amount (₹)"
-                    },
+                    labels={"category": "Category", "amount": "Amount (₹)"},
                 )
 
                 fig.update_layout(
@@ -206,18 +158,17 @@ if page == "Dashboard":
 
         if not monthly_data.empty:
 
-            monthly_pivot = monthly_data.pivot(
-                index="month",
-                columns="type",
-                values="amount"
-            ).fillna(0).reset_index()
+            monthly_pivot = (
+                monthly_data.pivot(index="month", columns="type", values="amount")
+                .fillna(0)
+                .reset_index()
+            )
 
             fig = px.bar(
                 monthly_pivot,
                 x="month",
                 y=[
-                    col for col in ["income", "expense"]
-                    if col in monthly_pivot.columns
+                    col for col in ["income", "expense"] if col in monthly_pivot.columns
                 ],
                 barmode="group",
                 title="Monthly Income vs Expenses",
@@ -244,9 +195,7 @@ if page == "Dashboard":
         recent = df.head(5)
 
         st.dataframe(
-            recent[
-                ["title", "amount", "type", "category", "date"]
-            ],
+            recent[["title", "amount", "type", "category", "date"]],
             use_container_width=True,
             hide_index=True,
         )
@@ -273,38 +222,26 @@ elif page == "Transactions":
 
         with col1:
             transaction_filter = st.selectbox(
-                "Transaction Type",
-                ["All", "income", "expense"]
+                "Transaction Type", ["All", "income", "expense"]
             )
 
         with col2:
-            categories = ["All"] + sorted(
-                df["category"].unique().tolist()
-            )
+            categories = ["All"] + sorted(df["category"].unique().tolist())
 
-            category_filter = st.selectbox(
-                "Category",
-                categories
-            )
+            category_filter = st.selectbox("Category", categories)
 
         filtered = df.copy()
 
         if transaction_filter != "All":
-            filtered = filtered[
-                filtered["type"] == transaction_filter
-            ]
+            filtered = filtered[filtered["type"] == transaction_filter]
 
         if category_filter != "All":
-            filtered = filtered[
-                filtered["category"] == category_filter
-            ]
+            filtered = filtered[filtered["category"] == category_filter]
 
         st.write(f"Showing {len(filtered)} transactions")
 
         st.dataframe(
-            filtered[
-                ["id", "title", "amount", "type", "category", "date"]
-            ],
+            filtered[["id", "title", "amount", "type", "category", "date"]],
             use_container_width=True,
             hide_index=True,
         )
@@ -329,89 +266,79 @@ elif page == "Transactions":
         transaction_ids = filtered["id"].tolist()
 
         if transaction_ids:
+            with st.container(border=True):
+                st.markdown("#### Update Existing Transaction")
 
-            selected_id = st.selectbox(
-                "Select transaction ID",
-                transaction_ids
-            )
+                selected_id = st.selectbox("Select transaction ID", transaction_ids)
 
-            selected = df[df["id"] == selected_id].iloc[0]
+                selected = df[df["id"] == selected_id].iloc[0]
 
-            with st.form("edit_transaction_form"):
+                with st.form("edit_transaction_form"):
+                    edit_title = st.text_input("Title", value=selected["title"])
 
-                edit_title = st.text_input(
-                    "Title",
-                    value=selected["title"]
-                )
-
-                edit_amount = st.number_input(
-                    "Amount (₹)",
-                    min_value=0.01,
-                    value=float(selected["amount"]),
-                    step=100.0
-                )
-
-                edit_type = st.selectbox(
-                    "Type",
-                    ["income", "expense"],
-                    index=["income", "expense"].index(
-                        selected["type"]
+                    edit_amount = st.number_input(
+                        "Amount (₹)",
+                        min_value=0.01,
+                        value=float(selected["amount"]),
+                        step=100.0,
                     )
-                )
 
-                edit_category = st.text_input(
-                    "Category",
-                    value=selected["category"]
-                )
+                    edit_type = st.selectbox(
+                        "Type",
+                        ["income", "expense"],
+                        index=["income", "expense"].index(selected["type"]),
+                    )
 
-                edit_date = st.date_input(
-                    "Date",
-                    value=date.fromisoformat(selected["date"])
-                )
+                    edit_category = st.text_input(
+                        "Category", value=selected["category"]
+                    )
 
-                submitted = st.form_submit_button(
-                    "Update Transaction"
-                )
+                    edit_date = st.date_input(
+                        "Date", value=date.fromisoformat(selected["date"])
+                    )
 
-                if submitted:
-                    try:
-                        update_transaction(
-                            selected_id,
-                            edit_title,
-                            edit_amount,
-                            edit_type,
-                            edit_category,
-                            edit_date.isoformat(),
-                        )
+                    submitted = st.form_submit_button("Update Transaction")
 
-                        st.success("Transaction updated.")
-                        st.rerun()
+                    if submitted:
+                        try:
+                            update_transaction(
+                                selected_id,
+                                edit_title,
+                                edit_amount,
+                                edit_type,
+                                edit_category,
+                                edit_date.isoformat(),
+                            )
 
-                    except ValueError as error:
-                        st.error(str(error))
+                            st.success("Transaction updated.")
+                            st.rerun()
+
+                        except ValueError as error:
+                            st.error(str(error))
 
         # DELETE TRANSACTION
-
         st.subheader("Delete Transaction")
 
-        delete_id = st.selectbox(
-            "Choose transaction to delete",
-            transaction_ids,
-            key="delete_id"
-        )
+        if transaction_ids:
+            with st.container(border=True):
+                delete_id = st.selectbox(
+                    "Choose transaction to delete",
+                    transaction_ids,
+                    key="delete_id",
+                )
 
-        if st.button("Delete Selected Transaction", type="primary"):
+                if st.button("Delete Selected Transaction", type="primary"):
+                    deleted = delete_transaction(delete_id)
 
-            deleted = delete_transaction(delete_id)
+                    if deleted:
+                        st.success("Transaction deleted.")
+                        st.rerun()
+                    else:
+                        st.warning("Transaction was not found.")
+        else:
+            st.info("No transactions available to delete.")
 
-            if deleted:
-                st.success("Transaction deleted.")
-                st.rerun()
-            else:
-                st.warning("Transaction was not found.")
 
-
-# --------------------------------------------------
 # ADD TRANSACTION PAGE
 # --------------------------------------------------
 
@@ -424,17 +351,9 @@ elif page == "Add Transaction":
 
         title = st.text_input("Transaction Title")
 
-        amount = st.number_input(
-            "Amount (₹)",
-            min_value=0.01,
-            value=100.0,
-            step=100.0
-        )
+        amount = st.number_input("Amount (₹)", min_value=0.01, value=100.0, step=100.0)
 
-        transaction_type = st.selectbox(
-            "Transaction Type",
-            ["expense", "income"]
-        )
+        transaction_type = st.selectbox("Transaction Type", ["expense", "income"])
 
         if transaction_type == "expense":
 
@@ -461,20 +380,11 @@ elif page == "Add Transaction":
                 "Other",
             ]
 
-        category = st.selectbox(
-            "Category",
-            category_options
-        )
+        category = st.selectbox("Category", category_options)
 
-        transaction_date = st.date_input(
-            "Transaction Date",
-            value=date.today()
-        )
+        transaction_date = st.date_input("Transaction Date", value=date.today())
 
-        submitted = st.form_submit_button(
-            "Save Transaction",
-            type="primary"
-        )
+        submitted = st.form_submit_button("Save Transaction", type="primary")
 
         if submitted:
 
@@ -487,9 +397,7 @@ elif page == "Add Transaction":
                     transaction_date.isoformat(),
                 )
 
-                st.success(
-                    f"Transaction saved successfully! ID: {transaction_id}"
-                )
+                st.success(f"Transaction saved successfully! ID: {transaction_id}")
 
                 st.rerun()
 
@@ -503,6 +411,4 @@ elif page == "Add Transaction":
 
 st.divider()
 
-st.caption(
-    "SpendWise | Personal Finance Management System | Built with Python"
-)
+st.caption("SpendWise | Personal Finance Management System | Built with Python")

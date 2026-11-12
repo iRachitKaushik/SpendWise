@@ -49,3 +49,41 @@ def test_empty_transactions():
 
     assert result["balance"] == 0
     assert result["savings_rate"] == 0
+
+
+def test_monthly_summary():
+    result = monthly_summary(sample_transactions())
+
+    november = result[result["month"] == "2026-11"]
+
+    assert november["amount"].sum() == 65000
+    assert len(november) == 2
+
+
+def test_monthly_summary_multiple_months():
+    transactions = [
+        {
+            "amount": 50000,
+            "type": "income",
+            "category": "Salary",
+            "date": "2026-10-01",
+        },
+        {
+            "amount": 10000,
+            "type": "expense",
+            "category": "Rent",
+            "date": "2026-11-02",
+        },
+    ]
+
+    result = monthly_summary(transactions)
+
+    assert len(result) == 2
+    assert set(result["month"]) == {"2026-10", "2026-11"}
+
+
+def test_empty_monthly_summary():
+    result = monthly_summary([])
+
+    assert result.empty
+    assert list(result.columns) == ["month", "type", "amount"]
