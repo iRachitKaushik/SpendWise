@@ -24,3 +24,6 @@ venv/
 # Editors
 .vscode/
 .idea/
+
+# Streamlit secrets
+.streamlit/secrets.toml
