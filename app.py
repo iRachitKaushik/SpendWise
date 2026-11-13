@@ -6,6 +6,7 @@ import plotly.express as px
 from datetime import date
 
 from components.styles import load_css
+from components.recurring_ui import render_recurring_page
 
 from services.auth import (
     sign_up,
@@ -116,7 +117,7 @@ if st.sidebar.button("Logout"):
 
 page = st.sidebar.radio(
     "Navigation",
-    ["Dashboard", "Transactions", "Add Transaction"],
+    ["Dashboard", "Transactions", "Add Transaction", "Recurring Transactions"],
 )
 
 st.sidebar.divider()
@@ -677,6 +678,9 @@ elif page == "Add Transaction":
                     f"Unable to save transaction: {error}"
                 )
 
+
+elif page == "Recurring Transactions":
+    render_recurring_page(user_id)
 
 # --------------------------------------------------
 # FOOTER
