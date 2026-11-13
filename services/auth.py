@@ -17,8 +17,6 @@ def initialize_auth_cookies():
     manager = stx.CookieManager(key="spendwise_auth_cookie_manager")
     st.session_state["_spendwise_cookie_manager"] = manager
 
-    if not manager.ready():
-        st.stop()
 
     return manager
 
