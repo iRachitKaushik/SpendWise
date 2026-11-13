@@ -16,6 +16,10 @@ def initialize_auth_cookies():
     """Initialize the browser cookie manager once per app run."""
     manager = stx.CookieManager(key="spendwise_auth_cookie_manager")
     st.session_state["_spendwise_cookie_manager"] = manager
+
+    if not manager.ready():
+        st.stop()
+
     return manager
 
 
@@ -152,6 +156,9 @@ def get_current_user():
         st.session_state["user"] = session.user
         return session.user
 
-    except Exception:
-        _clear_session()
+    except Exception as error:
+        if error.__class__.__name__ in {"AuthApiError", "AuthError"}:
+            _clear_session()
+        else:
+            st.session_state.pop("user", None)
         return None
