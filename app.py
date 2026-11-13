@@ -13,6 +13,7 @@ from services.auth import (
     sign_in,
     sign_out,
     get_current_user,
+    initialize_auth_cookies,
 )
 
 from services.transactions import (
@@ -37,6 +38,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+initialize_auth_cookies()
 
 
 # CUSTOM CSS
