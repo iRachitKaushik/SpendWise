@@ -1,0 +1,165 @@
+
+@import "tailwindcss";
+
+:root {
+  --background: #f8f7fc;
+  --foreground: #24213a;
+  --primary: #7653d6;
+  --primary-light: #a78bfa;
+  --mint: #b8e5d0;
+  --border: rgba(105, 88, 145, 0.10);
+  --surface: #ffffff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: #d9ccff;
+  color: #38216f;
+}
+
+button,
+a,
+input,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(118, 83, 214, 0.35);
+  outline-offset: 3px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c9bce8 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #c9bce8;
+  border-radius: 20px;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes wave {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+@keyframes gentle-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  main {
+    animation: fade-up 650ms ease both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+/* SpendWise — Premium dashboard surfaces */
+
+main > div > section {
+  background:
+    radial-gradient(ellipse at 85% 0%, rgba(224, 216, 255, 0.22), transparent 35%),
+    var(--background);
+}
+
+aside {
+  box-shadow: 8px 0 35px rgba(49, 36, 89, 0.025);
+}
+
+[class*="rounded-[22px]"],
+[class*="rounded-[24px]"] {
+  transition:
+    transform 280ms ease,
+    box-shadow 280ms ease,
+    border-color 280ms ease;
+}
+
+[class*="rounded-[22px]"]:hover,
+[class*="rounded-[24px]"]:hover {
+  border-color: rgba(118, 83, 214, 0.17);
+  box-shadow: 0 14px 38px rgba(73, 53, 125, 0.075);
+}
+
+button {
+  transition:
+    background-color 200ms ease,
+    color 200ms ease,
+    transform 200ms ease,
+    box-shadow 200ms ease;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 640px) {
+  main > div > section {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
