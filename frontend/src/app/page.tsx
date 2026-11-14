@@ -308,8 +308,8 @@ export default function Home() {
           <p className="mb-4 mt-10 px-3 text-[10px] font-bold tracking-[2px] text-[#aaa5bb]">PREFERENCES</p>
 
           <button
-            onClick={() => setError("Settings page is coming soon.")}
-            className="flex items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-semibold text-[#918da2] hover:bg-[#f8f7fc]"
+            onClick={() => navigateTo("/settings")}
+            className="flex items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-semibold text-[#918da2] transition hover:bg-[#f8f7fc]"
           >
             <Settings size={19} /> Settings
           </button>
