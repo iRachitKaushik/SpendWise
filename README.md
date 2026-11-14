@@ -1,4 +1,3 @@
-
 # SpendWise — Personal Finance Analytics Dashboard
 
 SpendWise is a personal finance management application built with Python and Streamlit. It helps users manage transactions, monitor income and expenses, and analyze financial performance through interactive visualizations.
