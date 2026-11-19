@@ -4,10 +4,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Search, Plus, ArrowLeft, ArrowUpDown, Pencil, Trash2,
-  ShoppingBag, Utensils, Car, House, Wallet, Loader2, X,
+  ShoppingBag, Utensils, Car, House, Wallet, Loader2, X, Download, Upload,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import * as XLSX from "xlsx";
 
 type Transaction = {
   id: string | number;
@@ -16,6 +17,16 @@ type Transaction = {
   type: "income" | "expense";
   category: string;
   date: string;
+};
+
+type ImportRow = {
+  title: string;
+  amount: number;
+  type: "income" | "expense";
+  category: string;
+  date: string;
+  status: "ready" | "duplicate" | "invalid";
+  reason: string;
 };
 
 const categories = [
@@ -48,6 +59,9 @@ export default function TransactionsPage() {
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [importRows, setImportRows] = useState<ImportRow[]>([]);
+  const [showImport, setShowImport] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
 
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
@@ -181,6 +195,186 @@ export default function TransactionsPage() {
     else await load();
   }
 
+  function exportFile(format: "csv" | "xlsx") {
+    const rows = filtered.map((item) => ({
+      title: item.title,
+      amount: Number(item.amount),
+      type: item.type,
+      category: item.category,
+      date: item.date,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
+
+    XLSX.writeFile(
+      workbook,
+      format === "csv"
+        ? "spendwise-transactions.csv"
+        : "spendwise-transactions.xlsx",
+      format === "csv" ? { bookType: "csv" } : {}
+    );
+  }
+
+  async function previewImport(file: File) {
+    setError("");
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+      if (!sheet) throw new Error("The selected file is empty.");
+
+      const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(
+        sheet,
+        { defval: "" }
+      );
+
+      if (rawRows.length === 0) {
+        throw new Error("No transaction rows found in this file.");
+      }
+
+      const seen = new Set<string>();
+
+      items.forEach((item) => {
+        seen.add([
+          item.title.trim().toLowerCase(),
+          Number(item.amount),
+          item.type,
+          item.category,
+          item.date,
+        ].join("|"));
+      });
+
+      const parsed: ImportRow[] = rawRows.map((raw) => {
+        const row = Object.fromEntries(
+          Object.entries(raw).map(([key, value]) => [
+            key.trim().toLowerCase().replace(/\s+/g, "_"),
+            value,
+          ])
+        );
+
+        const title = String(row.title ?? "").trim();
+        const amount = Number(String(row.amount ?? "").replace(/[₹,\s]/g, ""));
+        const transactionType = String(row.type ?? "").trim().toLowerCase();
+        const category = String(row.category ?? "").trim();
+
+        let date = "";
+        const rawDate = row.date;
+
+        if (rawDate instanceof Date && !Number.isNaN(rawDate.getTime())) {
+          date = [
+            rawDate.getFullYear(),
+            String(rawDate.getMonth() + 1).padStart(2, "0"),
+            String(rawDate.getDate()).padStart(2, "0"),
+          ].join("-");
+        } else if (typeof rawDate === "number") {
+          const parsedDate = XLSX.SSF.parse_date_code(rawDate);
+          if (parsedDate) {
+            date = [
+              parsedDate.y,
+              String(parsedDate.m).padStart(2, "0"),
+              String(parsedDate.d).padStart(2, "0"),
+            ].join("-");
+          }
+        } else {
+          const dateText = String(rawDate ?? "").trim();
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dateText)) {
+            date = dateText;
+          } else if (dateText) {
+            const parsedDate = new Date(dateText);
+            if (!Number.isNaN(parsedDate.getTime())) {
+              date = [
+                parsedDate.getFullYear(),
+                String(parsedDate.getMonth() + 1).padStart(2, "0"),
+                String(parsedDate.getDate()).padStart(2, "0"),
+              ].join("-");
+            }
+          }
+        }
+
+        let reason = "";
+
+        if (!title) reason = "Missing title";
+        else if (!Number.isFinite(amount) || amount <= 0) reason = "Invalid amount";
+        else if (transactionType !== "income" && transactionType !== "expense") {
+          reason = "Type must be income or expense";
+        } else if (!categories.includes(category)) {
+          reason = "Unknown category";
+        } else if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+          reason = "Invalid date";
+        }
+
+        const normalizedType = transactionType as "income" | "expense";
+        const key = [title.toLowerCase(), amount, normalizedType, category, date].join("|");
+
+        if (reason) {
+          return {
+            title, amount, type: normalizedType, category, date,
+            status: "invalid", reason,
+          };
+        }
+
+        if (seen.has(key)) {
+          return {
+            title, amount, type: normalizedType, category, date,
+            status: "duplicate", reason: "Already exists",
+          };
+        }
+
+        seen.add(key);
+
+        return {
+          title, amount, type: normalizedType, category, date,
+          status: "ready", reason: "Ready to import",
+        };
+      });
+
+      setImportRows(parsed);
+      setShowImport(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not read this file.");
+    }
+  }
+
+  async function confirmImport() {
+    const readyRows = importRows.filter((row) => row.status === "ready");
+    if (readyRows.length === 0) return;
+
+    setImportBusy(true);
+    setError("");
+
+    const { data: auth } = await supabase.auth.getUser();
+
+    if (!auth.user) {
+      setImportBusy(false);
+      router.replace("/login");
+      return;
+    }
+
+    const { error: insertError } = await supabase
+      .from("transactions")
+      .insert(
+        readyRows.map(({ title, amount, type, category, date }) => ({
+          title, amount, type, category, date,
+          user_id: auth.user!.id,
+        }))
+      );
+
+    setImportBusy(false);
+
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
+
+    setShowImport(false);
+    setImportRows([]);
+    await load();
+  }
+
   return (
     <main className="min-h-screen bg-[#f7f6fb] px-4 py-6 text-[#29263d] sm:px-8 lg:px-12">
       <div className="mx-auto max-w-[1250px]">
@@ -195,10 +389,33 @@ export default function TransactionsPage() {
             <h1 className="mt-1 text-3xl font-black">Transactions<span className="text-[#8068e5]">.</span></h1>
             <p className="mt-1 text-sm text-[#9994aa]">Track and manage every transaction.</p>
           </div>
-          <button onClick={() => openForm()}
-            className="flex items-center gap-2 rounded-xl bg-[#765fd6] px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200">
-            <Plus size={18} /> Add transaction
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={() => exportFile("csv")}
+              className="flex items-center gap-2 rounded-xl border border-[#eeeaf5] bg-white px-3 py-3 text-xs font-bold text-[#7665b5] hover:bg-violet-50">
+              <Download size={15} /> CSV
+            </button>
+            <button onClick={() => exportFile("xlsx")}
+              className="flex items-center gap-2 rounded-xl border border-[#eeeaf5] bg-white px-3 py-3 text-xs font-bold text-[#7665b5] hover:bg-violet-50">
+              <Download size={15} /> Excel
+            </button>
+            <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-[#eeeaf5] bg-white px-3 py-3 text-xs font-bold text-[#7665b5] hover:bg-violet-50">
+              <Upload size={15} /> Import
+              <input
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void previewImport(file);
+                  e.currentTarget.value = "";
+                }}
+              />
+            </label>
+            <button onClick={() => openForm()}
+              className="flex items-center gap-2 rounded-xl bg-[#765fd6] px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200">
+              <Plus size={18} /> Add transaction
+            </button>
+          </div>
         </header>
 
         {error && !modal && (
@@ -308,6 +525,99 @@ export default function TransactionsPage() {
           )}
         </section>
       </div>
+
+      {showImport && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-[#211b39]/40 p-4 backdrop-blur-sm">
+          <div className="my-auto max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl sm:p-8">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-black">Import preview</h2>
+                <p className="mt-1 text-xs text-[#9994aa]">
+                  Review the rows before adding them to your account.
+                </p>
+              </div>
+              <button onClick={() => setShowImport(false)} className="rounded-lg p-2 hover:bg-[#f5f3f8]">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="mb-5 grid grid-cols-3 gap-2">
+              <div className="rounded-xl bg-green-50 p-3">
+                <p className="text-xs text-green-700">Ready</p>
+                <p className="mt-1 text-xl font-black text-green-700">
+                  {importRows.filter((r) => r.status === "ready").length}
+                </p>
+              </div>
+              <div className="rounded-xl bg-amber-50 p-3">
+                <p className="text-xs text-amber-700">Duplicates</p>
+                <p className="mt-1 text-xl font-black text-amber-700">
+                  {importRows.filter((r) => r.status === "duplicate").length}
+                </p>
+              </div>
+              <div className="rounded-xl bg-red-50 p-3">
+                <p className="text-xs text-red-700">Invalid</p>
+                <p className="mt-1 text-xl font-black text-red-700">
+                  {importRows.filter((r) => r.status === "invalid").length}
+                </p>
+              </div>
+            </div>
+
+            <div className="max-h-[45vh] overflow-auto rounded-xl border border-[#eeeaf5]">
+              <table className="w-full min-w-[600px] text-left text-xs">
+                <thead className="sticky top-0 bg-[#f8f7fb] text-[#9994aa]">
+                  <tr>
+                    <th className="p-3">TITLE</th>
+                    <th className="p-3">AMOUNT</th>
+                    <th className="p-3">CATEGORY</th>
+                    <th className="p-3">DATE</th>
+                    <th className="p-3">STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importRows.map((row, index) => (
+                    <tr key={index} className="border-t border-[#f0eef6]">
+                      <td className="p-3 font-semibold">{row.title || "—"}</td>
+                      <td className="p-3">{Number.isFinite(row.amount) ? money(row.amount) : "—"}</td>
+                      <td className="p-3">{row.category || "—"}</td>
+                      <td className="p-3">{row.date || "—"}</td>
+                      <td className="p-3">
+                        <span className={
+                          row.status === "ready"
+                            ? "font-bold text-green-600"
+                            : row.status === "duplicate"
+                            ? "font-bold text-amber-600"
+                            : "font-bold text-red-600"
+                        }>
+                          {row.reason}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <p className="mt-4 text-xs text-[#9994aa]">
+              Required columns: title, amount, type, category, date. Duplicate and invalid rows will be skipped.
+            </p>
+
+            {error && <p className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>}
+
+            <div className="mt-5 flex flex-wrap justify-end gap-3">
+              <button onClick={() => setShowImport(false)}
+                className="rounded-xl border border-[#eeeaf5] px-5 py-3 text-sm font-bold text-[#77718a]">
+                Cancel
+              </button>
+              <button
+                onClick={() => void confirmImport()}
+                disabled={importBusy || importRows.every((r) => r.status !== "ready")}
+                className="rounded-xl bg-[#765fd6] px-5 py-3 text-sm font-bold text-white disabled:opacity-50">
+                {importBusy ? "Importing..." : `Import ${importRows.filter((r) => r.status === "ready").length} transactions`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#211b39]/40 p-4 backdrop-blur-sm">
