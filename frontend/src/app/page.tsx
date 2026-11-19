@@ -6,7 +6,7 @@ import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   LayoutDashboard, ArrowLeftRight, Wallet, ChartNoAxesCombined,
-  Settings, Repeat, Target, Plus, ArrowUpRight, ArrowDownRight, ShoppingBag,
+  Settings, Repeat, Target, Brain, Plus, ArrowUpRight, ArrowDownRight, ShoppingBag,
   Utensils, Car, House, Sparkles, Menu, X,
   CalendarDays, Trash2, Pencil, LogOut, TrendingUp, Loader2,
 } from "lucide-react";
@@ -46,6 +46,7 @@ const navItems = [
   { label: "Transactions", icon: ArrowLeftRight, path: "/transactions" },
   { label: "Recurring", icon: Repeat, path: "/recurring" },
   { label: "Savings Goals", icon: Target, path: "/goals" },
+  { label: "Smart Insights", icon: Brain, path: "/insights" },
   { label: "Budgets", icon: Wallet, path: "/budgets" },
   { label: "Analytics", icon: ChartNoAxesCombined, path: "/analytics" },
 ];
