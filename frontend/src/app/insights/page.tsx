@@ -28,8 +28,8 @@ const money = (value: number) =>
   }).format(value);
 
 const COLORS = [
-  "#8B7CF6", "#55BFA5", "#F5A66C", "#70A8E8",
-  "#E88CA8", "#A98AE8", "#E4BE62", "#78B7C5",
+  "#526B4B", "#55BFA5", "#F5A66C", "#70A8E8",
+  "#E88CA8", "#526B4B", "#E4BE62", "#78B7C5",
 ];
 
 export default function InsightsPage() {
@@ -185,7 +185,7 @@ export default function InsightsPage() {
         description:
           "Add your income and expenses to start generating personalized insights.",
         icon: Lightbulb,
-        color: "#8B7CF6",
+        color: "#526B4B",
       });
       return result;
     }
@@ -253,7 +253,7 @@ export default function InsightsPage() {
         title: `${a.topCategory.name} is your top expense`,
         description: `This category represents ${share.toFixed(1)}% of your recorded expenses over the selected period.`,
         icon: PieChart,
-        color: "#8B7CF6",
+        color: "#526B4B",
       });
     }
 
@@ -263,21 +263,21 @@ export default function InsightsPage() {
   const maxCategory = analysis.categoryData[0]?.amount || 1;
 
   return (
-    <main className="min-h-screen bg-[#F8F7FC] text-[#28243D]">
+    <main className="min-h-screen bg-[#F7F6F2] text-[#252823]">
       <div className="mx-auto max-w-[1450px] px-5 py-7 md:px-10 md:py-10">
 
         <header className="mb-9 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => router.push("/")}
-              className="rounded-xl border border-[#EAE7F2] bg-white p-3 transition hover:bg-[#F1EEFF]"
+              onClick={() => router.push("/dashboard")}
+              className="rounded-xl border border-[#E9EEE5] bg-white p-3 transition hover:bg-[#E9EEE5]"
             >
               <ArrowLeft size={19} />
             </button>
             <div>
               <div className="flex items-center gap-2">
-                <Sparkles size={17} className="text-[#8B7CF6]" />
-                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#938CA9]">
+                <Sparkles size={17} className="text-[#606C5C]" />
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#606C5C]">
                   SpendWise Intelligence
                 </span>
               </div>
@@ -290,7 +290,7 @@ export default function InsightsPage() {
           <button
             onClick={loadData}
             disabled={loading}
-            className="flex items-center gap-2 rounded-xl border border-[#EAE7F2] bg-white px-4 py-3 text-sm font-semibold hover:bg-[#F1EEFF] disabled:opacity-50"
+            className="flex items-center gap-2 rounded-xl border border-[#E9EEE5] bg-white px-4 py-3 text-sm font-semibold hover:bg-[#E9EEE5] disabled:opacity-50"
           >
             <RefreshCw size={16} />
             Refresh
@@ -299,7 +299,7 @@ export default function InsightsPage() {
 
         {loading ? (
           <div className="flex min-h-[400px] items-center justify-center">
-            <Loader2 className="animate-spin text-[#8B7CF6]" size={34} />
+            <Loader2 className="animate-spin text-[#606C5C]" size={34} />
           </div>
         ) : error ? (
           <div className="rounded-2xl border border-red-100 bg-white p-8 text-center">
@@ -308,7 +308,7 @@ export default function InsightsPage() {
             <p className="mt-2 text-sm text-gray-500">{error}</p>
             <button
               onClick={loadData}
-              className="mt-5 rounded-xl bg-[#8B7CF6] px-5 py-3 text-sm font-semibold text-white"
+              className="mt-5 rounded-xl bg-[#526B4B] px-5 py-3 text-sm font-semibold text-white"
             >
               Try again
             </button>
@@ -317,13 +317,13 @@ export default function InsightsPage() {
           <>
             <section className="mb-7 flex flex-wrap items-center justify-between gap-4">
               <div>
-                <p className="text-sm text-[#918BA4]">Financial overview</p>
+                <p className="text-sm text-[#606C5C]">Financial overview</p>
                 <h2 className="mt-1 text-xl font-bold">{analysis.monthLabel}</h2>
               </div>
               <select
                 value={period}
                 onChange={(e) => setPeriod(e.target.value)}
-                className="rounded-xl border border-[#EAE7F2] bg-white px-4 py-3 text-sm font-semibold outline-none"
+                className="rounded-xl border border-[#E9EEE5] bg-white px-4 py-3 text-sm font-semibold outline-none"
               >
                 <option value="3">Last 3 months</option>
                 <option value="6">Last 6 months</option>
@@ -351,8 +351,8 @@ export default function InsightsPage() {
                   label: "Net savings",
                   value: analysis.savings,
                   icon: Wallet,
-                  color: "#8B7CF6",
-                  bg: "#F0EDFF",
+                  color: "#526B4B",
+                  bg: "#E9EEE5",
                 },
                 {
                   label: "Savings rate",
@@ -370,10 +370,10 @@ export default function InsightsPage() {
                 return (
                   <div
                     key={item.label}
-                    className="rounded-[24px] border border-[#EFEDF5] bg-white p-6 shadow-[0_4px_24px_rgba(43,35,78,0.035)]"
+                    className="rounded-[24px] border border-[#E9EEE5] bg-white p-6 shadow-[0_4px_24px_rgba(43,35,78,0.035)]"
                   >
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-[#928CA5]">{item.label}</p>
+                      <p className="text-sm text-[#606C5C]">{item.label}</p>
                       <div
                         className="rounded-xl p-3"
                         style={{ background: item.bg, color: item.color }}
@@ -386,7 +386,7 @@ export default function InsightsPage() {
                         ? item.value ?? "N/A"
                         : money(Number(item.value))}
                     </h3>
-                    <p className="mt-2 text-xs text-[#A19BAF]">
+                    <p className="mt-2 text-xs text-[#606C5C]">
                       Current month
                     </p>
                   </div>
@@ -395,14 +395,14 @@ export default function InsightsPage() {
             </section>
 
             <section className="mt-7 grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
-              <div className="rounded-[26px] border border-[#EFEDF5] bg-white p-6 md:p-8">
+              <div className="rounded-[26px] border border-[#E9EEE5] bg-white p-6 md:p-8">
                 <div className="mb-7 flex items-center gap-3">
-                  <div className="rounded-xl bg-[#F0EDFF] p-3 text-[#8B7CF6]">
+                  <div className="rounded-xl bg-[#E9EEE5] p-3 text-[#606C5C]">
                     <Brain size={21} />
                   </div>
                   <div>
                     <h3 className="font-bold">Your financial insights</h3>
-                    <p className="mt-1 text-xs text-[#9992AA]">
+                    <p className="mt-1 text-xs text-[#606C5C]">
                       Generated from your transaction history
                     </p>
                   </div>
@@ -414,7 +414,7 @@ export default function InsightsPage() {
                     return (
                       <div
                         key={index}
-                        className="flex gap-4 rounded-2xl bg-[#FAF9FD] p-5"
+                        className="flex gap-4 rounded-2xl bg-[#F7F6F2] p-5"
                       >
                         <div
                           className="h-fit rounded-xl p-3"
@@ -427,7 +427,7 @@ export default function InsightsPage() {
                         </div>
                         <div>
                           <h4 className="text-sm font-bold">{item.title}</h4>
-                          <p className="mt-2 text-sm leading-6 text-[#89839B]">
+                          <p className="mt-2 text-sm leading-6 text-[#606C5C]">
                             {item.description}
                           </p>
                         </div>
@@ -437,27 +437,27 @@ export default function InsightsPage() {
                 </div>
               </div>
 
-              <div className="rounded-[26px] border border-[#EFEDF5] bg-white p-6 md:p-8">
+              <div className="rounded-[26px] border border-[#E9EEE5] bg-white p-6 md:p-8">
                 <div className="mb-7 flex items-center gap-3">
                   <div className="rounded-xl bg-[#EAF7F2] p-3 text-[#38A98B]">
                     <PieChart size={21} />
                   </div>
                   <div>
                     <h3 className="font-bold">Expense breakdown</h3>
-                    <p className="mt-1 text-xs text-[#9992AA]">
+                    <p className="mt-1 text-xs text-[#606C5C]">
                       Selected period
                     </p>
                   </div>
                 </div>
 
                 {analysis.categoryData.length === 0 ? (
-                  <p className="py-12 text-center text-sm text-[#9992AA]">
+                  <p className="py-12 text-center text-sm text-[#606C5C]">
                     No expense data available.
                   </p>
                 ) : (
                   <>
                     <div className="mb-7 text-center">
-                      <p className="text-xs text-[#9992AA]">
+                      <p className="text-xs text-[#606C5C]">
                         Total expenses
                       </p>
                       <h3 className="mt-2 text-3xl font-bold">
@@ -470,11 +470,11 @@ export default function InsightsPage() {
                         <div key={item.name}>
                           <div className="mb-2 flex justify-between gap-3 text-sm">
                             <span className="font-medium">{item.name}</span>
-                            <span className="text-[#8E879F]">
+                            <span className="text-[#606C5C]">
                               {money(item.amount)}
                             </span>
                           </div>
-                          <div className="h-2 overflow-hidden rounded-full bg-[#F1EFF6]">
+                          <div className="h-2 overflow-hidden rounded-full bg-[#E9EEE5]">
                             <div
                               className="h-full rounded-full"
                               style={{
@@ -492,7 +492,7 @@ export default function InsightsPage() {
             </section>
 
             <section className="mt-7 grid gap-5 md:grid-cols-2">
-              <div className="rounded-[24px] border border-[#EFEDF5] bg-white p-6">
+              <div className="rounded-[24px] border border-[#E9EEE5] bg-white p-6">
                 <div className="flex items-center gap-3">
                   <div className="rounded-xl bg-[#FFF3E8] p-3 text-[#E39A55]">
                     <CalendarDays size={20} />
@@ -501,21 +501,21 @@ export default function InsightsPage() {
                 </div>
                 <div className="mt-6 space-y-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#928CA5]">Last month expenses</span>
+                    <span className="text-[#606C5C]">Last month expenses</span>
                     <strong>{money(analysis.previousExpenses)}</strong>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#928CA5]">This month expenses</span>
+                    <span className="text-[#606C5C]">This month expenses</span>
                     <strong>{money(analysis.expenses)}</strong>
                   </div>
-                  <div className="rounded-xl bg-[#FAF9FD] p-4">
-                    <p className="text-xs text-[#928CA5]">
+                  <div className="rounded-xl bg-[#F7F6F2] p-4">
+                    <p className="text-xs text-[#606C5C]">
                       Change compared to last month
                     </p>
                     <p
                       className={`mt-2 text-xl font-bold ${
                         analysis.change === null
-                          ? "text-[#8B7CF6]"
+                          ? "text-[#606C5C]"
                           : analysis.change > 0
                             ? "text-[#E07878]"
                             : "text-[#38A98B]"
@@ -529,7 +529,7 @@ export default function InsightsPage() {
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-[#EFEDF5] bg-white p-6">
+              <div className="rounded-[24px] border border-[#E9EEE5] bg-white p-6">
                 <div className="flex items-center gap-3">
                   <div className="rounded-xl bg-[#EDF5FF] p-3 text-[#70A8E8]">
                     <Lightbulb size={20} />
@@ -538,7 +538,7 @@ export default function InsightsPage() {
                 </div>
                 <div className="mt-6 space-y-5">
                   <div>
-                    <p className="text-xs text-[#928CA5]">
+                    <p className="text-xs text-[#606C5C]">
                       Average monthly expenses
                     </p>
                     <h3 className="mt-2 text-2xl font-bold">
@@ -546,7 +546,7 @@ export default function InsightsPage() {
                     </h3>
                   </div>
                   <div>
-                    <p className="text-xs text-[#928CA5]">
+                    <p className="text-xs text-[#606C5C]">
                       Top spending category
                     </p>
                     <h3 className="mt-2 text-xl font-bold">
@@ -554,7 +554,7 @@ export default function InsightsPage() {
                     </h3>
                   </div>
                   <div>
-                    <p className="text-xs text-[#928CA5]">
+                    <p className="text-xs text-[#606C5C]">
                       Transactions this month
                     </p>
                     <h3 className="mt-2 text-2xl font-bold">
@@ -565,7 +565,7 @@ export default function InsightsPage() {
               </div>
             </section>
 
-            <p className="mt-7 text-center text-xs leading-5 text-[#A49DB2]">
+            <p className="mt-7 text-center text-xs leading-5 text-[#606C5C]">
               Insights are calculated from recorded transactions. They are
               informational estimates, not financial advice. The current
               month may be incomplete.

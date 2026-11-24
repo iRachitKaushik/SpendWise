@@ -104,18 +104,18 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F8FC] flex items-center justify-center">
+      <div className="min-h-screen bg-[#F7F6F2] flex items-center justify-center">
         <Loader2 className="animate-spin text-violet-600" size={28} />
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#F8F8FC] text-[#25233A]">
+    <main className="min-h-screen bg-[#F7F6F2] text-[#252823]">
       <div className="max-w-5xl mx-auto px-5 md:px-10 py-8">
 
         <button
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/dashboard")}
           className="flex items-center gap-2 text-sm text-gray-500 hover:text-violet-600 transition mb-8"
         >
           <ArrowLeft size={17} /> Back to Dashboard
@@ -254,7 +254,7 @@ export default function SettingsPage() {
               <button
                 onClick={changePassword}
                 disabled={saving || !password || !confirmPassword}
-                className="bg-[#24213A] hover:bg-black disabled:opacity-50 text-white px-6 py-3 rounded-xl text-sm font-semibold transition"
+                className="bg-[#252823] hover:bg-black disabled:opacity-50 text-white px-6 py-3 rounded-xl text-sm font-semibold transition"
               >
                 {saving ? "Updating..." : "Update Password"}
               </button>

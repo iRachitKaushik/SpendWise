@@ -2,19 +2,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8f7fc;
-  --foreground: #24213a;
-  --primary: #7653d6;
-  --primary-light: #a78bfa;
-  --mint: #b8e5d0;
-  --border: rgba(105, 88, 145, 0.10);
+  --background: #F7F6F2;
+  --foreground: #252823;
+  --primary: #526B4B;
+  --primary-light: #81977B;
+  --mint: #DCE5D7;
+  --border: rgba(82, 107, 75, 0.12);
   --surface: #ffffff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-manrope);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -30,14 +30,14 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-manrope), sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
 ::selection {
-  background: #d9ccff;
-  color: #38216f;
+  background: #DCE5D7;
+  color: #354D30;
 }
 
 button,
@@ -55,13 +55,13 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 3px solid rgba(118, 83, 214, 0.35);
+  outline: 3px solid rgba(82, 107, 75, 0.30);
   outline-offset: 3px;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #c9bce8 transparent;
+  scrollbar-color: #BBC8B5 transparent;
 }
 
 *::-webkit-scrollbar {
@@ -70,7 +70,7 @@ select:focus-visible {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: #c9bce8;
+  background: #BBC8B5;
   border-radius: 20px;
 }
 
@@ -121,14 +121,10 @@ select:focus-visible {
 }
 /* SpendWise — Premium dashboard surfaces */
 
-main > div > section {
-  background:
-    radial-gradient(ellipse at 85% 0%, rgba(224, 216, 255, 0.22), transparent 35%),
-    var(--background);
-}
+
 
 aside {
-  box-shadow: 8px 0 35px rgba(49, 36, 89, 0.025);
+  box-shadow: 8px 0 35px rgba(37, 40, 35, 0.025);
 }
 
 [class*="rounded-[22px]"],
@@ -141,8 +137,8 @@ aside {
 
 [class*="rounded-[22px]"]:hover,
 [class*="rounded-[24px]"]:hover {
-  border-color: rgba(118, 83, 214, 0.17);
-  box-shadow: 0 14px 38px rgba(73, 53, 125, 0.075);
+  border-color: rgba(82, 107, 75, 0.17);
+  box-shadow: 0 14px 38px rgba(37, 40, 35, 0.065);
 }
 
 button {
@@ -158,8 +154,146 @@ button:active {
 }
 
 @media (max-width: 640px) {
-  main > div > section {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
+  
 }
+
+/* SpendWise — Soft Minimal Luxury */
+
+h1, h2 {
+  font-family: var(--font-playfair), Georgia, serif;
+  letter-spacing: -0.035em;
+  font-weight: 500;
+}
+
+h3, h4 {
+  letter-spacing: -0.025em;
+}
+
+button, input, select, textarea {
+  font-family: var(--font-manrope), sans-serif;
+}
+
+body {
+  font-feature-settings: "tnum" 1;
+}
+
+aside {
+  border-color: #E5E8E0;
+}
+
+input, select, textarea {
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #81977B;
+}
+
+::selection {
+  background: #DCE5D7;
+  color: #252823;
+}
+
+
+/* SpendWise aesthetic palette */
+@theme {
+  --color-purple-50: #F4F6F2;
+  --color-purple-100: #E9EEE5;
+  --color-purple-200: #DCE5D7;
+  --color-purple-300: #BBCBB4;
+  --color-purple-400: #81977B;
+  --color-purple-500: #607B59;
+  --color-purple-600: #526B4B;
+  --color-purple-700: #40583B;
+  --color-purple-800: #354D30;
+  --color-purple-900: #293D26;
+  --color-purple-950: #1F2D1D;
+  --color-violet-50: #F4F6F2;
+  --color-violet-100: #E9EEE5;
+  --color-violet-200: #DCE5D7;
+  --color-violet-300: #BBCBB4;
+  --color-violet-400: #81977B;
+  --color-violet-500: #607B59;
+  --color-violet-600: #526B4B;
+  --color-violet-700: #40583B;
+  --color-violet-800: #354D30;
+  --color-violet-900: #293D26;
+  --color-violet-950: #1F2D1D;
+  --color-indigo-50: #F4F6F2;
+  --color-indigo-100: #E9EEE5;
+  --color-indigo-200: #DCE5D7;
+  --color-indigo-300: #BBCBB4;
+  --color-indigo-400: #81977B;
+  --color-indigo-500: #607B59;
+  --color-indigo-600: #526B4B;
+  --color-indigo-700: #40583B;
+  --color-indigo-800: #354D30;
+  --color-indigo-900: #293D26;
+  --color-indigo-950: #1F2D1D;
+}
+
+
+body {
+  background: #F7F6F2;
+  color: #252823;
+}
+
+aside {
+  box-shadow: 0 8px 40px rgba(37, 40, 35, 0.035);
+}
+
+h1, h2 {
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+button {
+  font-weight: 600;
+}
+
+[class*="rounded-[22px]"],
+[class*="rounded-[24px]"] {
+  box-shadow: 0 3px 18px rgba(37, 40, 35, 0.035);
+}
+
+[class*="rounded-[22px]"]:hover,
+[class*="rounded-[24px]"]:hover {
+  box-shadow: 0 8px 28px rgba(37, 40, 35, 0.07);
+}
+
+
+
+/* SpendWise compact dashboard */
+
+@media (min-width: 1024px) {
+
+  html:has(main[data-spendwise-dashboard]) {
+    font-size: 14px;
+  }
+
+  main[data-spendwise-dashboard] > div[class*="max-w-"] {
+    max-width: 1440px;
+    margin-inline: auto;
+  }
+
+  main[data-spendwise-dashboard] aside {
+    width: 232px;
+    padding: 18px;
+    height: calc(100dvh - 40px);
+    top: 20px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  main[data-spendwise-dashboard] aside nav a,
+  main[data-spendwise-dashboard] aside nav button {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  main[data-spendwise-dashboard] h1 {
+    font-size: 32px;
+  }
+
+}
+

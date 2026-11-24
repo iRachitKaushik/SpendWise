@@ -36,14 +36,32 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isLoginPage = request.nextUrl.pathname === "/login";
+  const pathname = request.nextUrl.pathname;
 
-  if (!user && !isLoginPage) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  const isLoginPage = pathname === "/login";
+  const isPublicPage =
+    pathname === "/" ||
+    pathname === "/welcome" ||
+    isLoginPage;
+
+  function redirectTo(path: string) {
+    const redirect = NextResponse.redirect(
+      new URL(path, request.url)
+    );
+
+    response.cookies.getAll().forEach(cookie => {
+      redirect.cookies.set(cookie);
+    });
+
+    return redirect;
+  }
+
+  if (!user && !isPublicPage) {
+    return redirectTo("/login");
   }
 
   if (user && isLoginPage) {
-    return NextResponse.redirect(new URL("/", request.url));
+    return redirectTo("/dashboard");
   }
 
   return response;

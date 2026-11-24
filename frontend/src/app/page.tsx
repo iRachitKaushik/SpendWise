@@ -1,581 +1,208 @@
-
-"use client";
-
-import { useEffect, useMemo, useState } from "react";
-import type { FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
-  LayoutDashboard, ArrowLeftRight, Wallet, ChartNoAxesCombined,
-  Settings, Repeat, Target, Brain, Plus, ArrowUpRight, ArrowDownRight, ShoppingBag,
-  Utensils, Car, House, Sparkles, Menu, X,
-  CalendarDays, Trash2, Pencil, LogOut, TrendingUp, Loader2,
+  Wallet, ArrowUpRight, ChartNoAxesCombined,
+  Target, Brain, Repeat, ArrowLeftRight, ShieldCheck
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 
-type Transaction = {
-  id: string | number;
-  title: string;
-  amount: number;
-  type: "income" | "expense";
-  category: string;
-  date: string;
-};
-
-const categories = [
-  "Food & Dining", "Shopping", "Transport", "Housing",
-  "Entertainment", "Health", "Education", "Salary", "Other",
+const features = [
+  {
+    icon: ArrowLeftRight,
+    title: "Track every rupee.",
+    description: "Organize your income and expenses in one simple space."
+  },
+  {
+    icon: Target,
+    title: "Save with purpose.",
+    description: "Set meaningful financial goals and monitor your progress."
+  },
+  {
+    icon: Brain,
+    title: "Understand your money.",
+    description: "Discover spending patterns with smart financial insights."
+  },
+  {
+    icon: ChartNoAxesCombined,
+    title: "See the bigger picture.",
+    description: "Visualize your financial activity with clear analytics."
+  },
+  {
+    icon: Repeat,
+    title: "Stay ahead of bills.",
+    description: "Manage recurring expenses and subscriptions."
+  },
+  {
+    icon: ShieldCheck,
+    title: "Your personal space.",
+    description: "Manage your finances through your own account."
+  }
 ];
 
-const money = (value: number) =>
-  new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(value);
-
-const categoryIcon = (category: string) => {
-  if (category === "Food & Dining") return Utensils;
-  if (category === "Shopping") return ShoppingBag;
-  if (category === "Transport") return Car;
-  if (category === "Housing") return House;
-  return Wallet;
-};
-
-const navItems = [
-  { label: "Overview", icon: LayoutDashboard, path: "/" },
-  { label: "Transactions", icon: ArrowLeftRight, path: "/transactions" },
-  { label: "Recurring", icon: Repeat, path: "/recurring" },
-  { label: "Savings Goals", icon: Target, path: "/goals" },
-  { label: "Smart Insights", icon: Brain, path: "/insights" },
-  { label: "Budgets", icon: Wallet, path: "/budgets" },
-  { label: "Analytics", icon: ChartNoAxesCombined, path: "/analytics" },
-];
-
-export default function Home() {
-  const router = useRouter();
-
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [userEmail, setUserEmail] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Transaction | null>(null);
-
-  const [title, setTitle] = useState("");
-  const [amount, setAmount] = useState("");
-  const [type, setType] = useState<"income" | "expense">("expense");
-  const [category, setCategory] = useState("Food & Dining");
-  const [date, setDate] = useState(new Date().toLocaleDateString("en-CA"));
-
-  const income = useMemo(
-    () => transactions
-      .filter((t) => t.type === "income")
-      .reduce((sum, t) => sum + Number(t.amount), 0),
-    [transactions]
-  );
-
-  const expenses = useMemo(
-    () => transactions
-      .filter((t) => t.type === "expense")
-      .reduce((sum, t) => sum + Number(t.amount), 0),
-    [transactions]
-  );
-
-  const balance = income - expenses;
-
-  async function loadTransactions() {
-    setLoading(true);
-    setError("");
-
-    const { data: authData, error: authError } =
-      await supabase.auth.getUser();
-
-    if (authError || !authData.user) {
-      router.replace("/login");
-      return;
-    }
-
-    setUserEmail(authData.user.email ?? "");
-
-    const { data, error: fetchError } = await supabase
-      .from("transactions")
-      .select("id, title, amount, type, category, date")
-      .eq("user_id", authData.user.id)
-      .order("date", { ascending: false });
-
-    if (fetchError) {
-      setError(fetchError.message);
-    } else {
-      setTransactions((data ?? []) as Transaction[]);
-    }
-
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    loadTransactions();
-  }, []);
-
-  function navigateTo(path: string) {
-    setMenuOpen(false);
-    router.push(path);
-  }
-
-  function openAddModal() {
-    setEditing(null);
-    setTitle("");
-    setAmount("");
-    setType("expense");
-    setCategory("Food & Dining");
-    setDate(new Date().toLocaleDateString("en-CA"));
-    setError("");
-    setModalOpen(true);
-  }
-
-  function openEditModal(transaction: Transaction) {
-    setEditing(transaction);
-    setTitle(transaction.title);
-    setAmount(String(transaction.amount));
-    setType(transaction.type);
-    setCategory(transaction.category);
-    setDate(transaction.date);
-    setError("");
-    setModalOpen(true);
-  }
-
-  async function handleSave(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setSaving(true);
-    setError("");
-
-    const { data: authData, error: authError } =
-      await supabase.auth.getUser();
-
-    if (authError || !authData.user) {
-      setError("Your session has expired. Please sign in again.");
-      setSaving(false);
-      return;
-    }
-
-    const transactionData = {
-      title: title.trim(),
-      amount: Number(amount),
-      type,
-      category,
-      date,
-    };
-
-    if (
-      !title.trim() ||
-      !Number.isFinite(Number(amount)) ||
-      Number(amount) <= 0 ||
-      !date
-    ) {
-      setError("Please enter valid transaction details.");
-      setSaving(false);
-      return;
-    }
-
-    const result = editing
-      ? await supabase
-          .from("transactions")
-          .update(transactionData)
-          .eq("id", editing.id)
-          .eq("user_id", authData.user.id)
-          .select()
-      : await supabase
-          .from("transactions")
-          .insert({
-            ...transactionData,
-            user_id: authData.user.id,
-          })
-          .select();
-
-    if (result.error) {
-      setError(result.error.message);
-      setSaving(false);
-      return;
-    }
-
-    setModalOpen(false);
-    setSaving(false);
-    await loadTransactions();
-  }
-
-  async function handleDelete(id: string | number) {
-    if (!window.confirm("Delete this transaction permanently?")) return;
-
-    const { data: authData } = await supabase.auth.getUser();
-
-    if (!authData.user) {
-      router.replace("/login");
-      return;
-    }
-
-    const { error: deleteError } = await supabase
-      .from("transactions")
-      .delete()
-      .eq("id", id)
-      .eq("user_id", authData.user.id);
-
-    if (deleteError) {
-      setError(deleteError.message);
-      return;
-    }
-
-    await loadTransactions();
-  }
-
-  async function handleLogout() {
-    const { error: logoutError } = await supabase.auth.signOut();
-
-    if (logoutError) {
-      setError(logoutError.message);
-      return;
-    }
-
-    router.replace("/login");
-    router.refresh();
-  }
-
-  const currentMonth = new Date().toISOString().slice(0, 7);
-
-  const monthlyIncome = transactions
-    .filter((t) => t.type === "income" && t.date.startsWith(currentMonth))
-    .reduce((sum, t) => sum + Number(t.amount), 0);
-
-  const monthlyExpenses = transactions
-    .filter((t) => t.type === "expense" && t.date.startsWith(currentMonth))
-    .reduce((sum, t) => sum + Number(t.amount), 0);
-
-  const expenseCategories = categories
-    .map((name) => ({
-      name,
-      amount: transactions
-        .filter((t) => t.type === "expense" && t.category === name)
-        .reduce((sum, t) => sum + Number(t.amount), 0),
-    }))
-    .filter((item) => item.amount > 0)
-    .sort((a, b) => b.amount - a.amount)
-    .slice(0, 5);
-
-  const formattedDate = (value: string) =>
-    new Date(`${value}T00:00:00`).toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-
+export default function WelcomePage() {
   return (
-    <main className="min-h-screen bg-[#f7f6fb] text-[#29263d]">
-      <div className="mx-auto flex min-h-screen max-w-[1600px] gap-5 p-3 sm:p-5 lg:p-7">
+    <main className="min-h-screen overflow-hidden bg-[#F7F6F2] text-[#252823]">
 
-        <aside className={`${menuOpen ? "translate-x-0" : "-translate-x-[120%]"} fixed inset-y-3 left-3 z-50 flex w-[260px] flex-col rounded-[28px] border border-white bg-white p-6 shadow-2xl transition-transform duration-300 lg:sticky lg:top-7 lg:h-[calc(100vh-56px)] lg:translate-x-0`}>
-          <div className="mb-12 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8873ef] to-[#6550cb] text-white">
-                <Wallet size={22} />
-              </div>
-              <div>
-                <h1 className="text-xl font-black">SpendWise<span className="text-violet-500">.</span></h1>
-                <p className="text-[9px] font-bold tracking-[2px] text-[#aaa5bb]">MONEY, MADE CLEAR</p>
-              </div>
-            </div>
-            <button onClick={() => setMenuOpen(false)} className="lg:hidden"><X /></button>
+      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-7 lg:px-12">
+        <Link href="/" className="flex items-center gap-3">
+          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#526B4B] text-white">
+            <svg viewBox="0 0 64 64" width="36" height="36" aria-hidden="true">
+  <path d="M43 19H28C15 19 15 32 28 32H36C49 32 49 45 36 45H21" fill="none" stroke="#F7F6F2" strokeWidth="4.5" strokeLinecap="round"/>
+  <circle cx="46" cy="45" r="3" fill="#BBCBB4"/>
+</svg>
+          </div>
+          <h2 className="text-2xl">SpendWise.</h2>
+        </Link>
+
+        <Link href="/login" className="rounded-full border border-[#BBC8B5] px-5 py-2.5 text-sm font-semibold hover:bg-[#E9EEE5]">
+          Sign in
+        </Link>
+      </header>
+
+      <section className="mx-auto max-w-7xl px-6 pb-20 pt-16 text-center lg:px-12 lg:pt-24">
+
+        <p className="mb-8 text-[11px] font-bold tracking-[0.22em] text-[#526B4B]">
+          A BETTER RELATIONSHIP WITH MONEY
+        </p>
+
+        <h1 className="mx-auto max-w-5xl text-5xl leading-[1.12] sm:text-7xl lg:text-8xl">
+          Master your money.
+          <span className="mt-2 block italic text-[#526B4B]">
+            Live with clarity.
+          </span>
+        </h1>
+
+        <p className="mx-auto mt-7 max-w-xl text-base leading-relaxed text-[#687363] sm:text-lg">
+          A thoughtful space to track spending, build savings
+          and take control of your financial life.
+        </p>
+
+        <div className="mt-9 flex flex-wrap justify-center gap-3">
+          <Link href="/login" className="inline-flex items-center gap-3 rounded-full bg-[#526B4B] px-8 py-4 text-sm font-semibold text-white transition hover:bg-[#40583B]">
+            Get started <ArrowUpRight size={18} />
+          </Link>
+
+          <a href="#features" className="rounded-full border border-[#BBC8B5] px-8 py-4 text-sm font-semibold transition hover:bg-[#E9EEE5]">
+            Explore features
+          </a>
+        </div>
+
+        <div className="mx-auto mt-20 max-w-4xl rounded-[32px] border border-[#E0E5DA] bg-white p-5 text-left shadow-xl shadow-[#526B4B]/5 sm:p-9">
+
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-3xl">Your financial overview.</h2>
+            <span className="text-xs text-[#687363]">
+              Preview · Sample data
+            </span>
           </div>
 
-          <p className="mb-4 px-3 text-[10px] font-bold tracking-[2px] text-[#aaa5bb]">MENU</p>
+          <div className="rounded-[26px] bg-[#526B4B] p-7 text-white sm:p-10">
+            <p className="text-sm text-[#DCE5D7]">Net balance</p>
+            <p className="mt-3 text-4xl font-semibold tracking-tight sm:text-6xl">
+              ₹84,250
+            </p>
+            <svg viewBox="0 0 600 150" className="mt-7 w-full" aria-hidden="true">
+  <defs>
+    <linearGradient id="balanceFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stopColor="#DCE5D7" stopOpacity="0.25" />
+      <stop offset="100%" stopColor="#DCE5D7" stopOpacity="0" />
+    </linearGradient>
+  </defs>
 
-          <nav className="space-y-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.label}
-                  onClick={() => navigateTo(item.path)}
-                  className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-semibold transition ${
-                    item.path === "/"
-                      ? "bg-[#eeeaff] text-[#735bd4]"
-                      : "text-[#918da2] hover:bg-[#f8f7fc]"
-                  }`}
-                >
-                  <Icon size={19} />
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
+  {[40, 85, 130].map(y => (
+    <line key={y} x1="0" y1={y} x2="600" y2={y}
+      stroke="white" opacity="0.10" strokeDasharray="4 6" />
+  ))}
 
-          <p className="mb-4 mt-10 px-3 text-[10px] font-bold tracking-[2px] text-[#aaa5bb]">PREFERENCES</p>
+  <path
+    d="M0 125 C40 125 50 100 90 105 S150 120 190 85 S250 65 285 80 S350 65 390 45 S450 65 490 30 S550 25 590 12 L590 145 L0 145 Z"
+    fill="url(#balanceFill)"
+  />
 
-          <button
-            onClick={() => navigateTo("/settings")}
-            className="flex items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-semibold text-[#918da2] transition hover:bg-[#f8f7fc]"
-          >
-            <Settings size={19} /> Settings
-          </button>
+  <path
+    d="M0 125 C40 125 50 100 90 105 S150 120 190 85 S250 65 285 80 S350 65 390 45 S450 65 490 30 S550 25 590 12"
+    fill="none"
+    stroke="#E4EDE0"
+    strokeWidth="3"
+    strokeLinecap="round"
+  />
 
-          <div className="mt-auto rounded-[23px] bg-gradient-to-br from-[#eeeaff] to-[#e4f4fa] p-5">
-            <Sparkles size={24} className="mb-4 text-[#8068e5]" />
-            <p className="text-sm font-bold">Build better habits.</p>
-            <p className="mt-1 text-xs leading-5 text-[#817c99]">Your financial journey starts with small steps.</p>
+  <circle cx="590" cy="12" r="8" fill="#DCE5D7" opacity="0.2" />
+  <circle cx="590" cy="12" r="4" fill="#F7F6F2" />
+</svg>
+
+<div className="mt-2 flex justify-between text-[11px] text-[#DCE5D7]">
+  {["Jun", "Jul", "Aug", "Sep", "Oct", "Nov"].map(month => (
+    <span key={month}>{month}</span>
+  ))}
+</div>
           </div>
 
-          <div className="mt-5 flex items-center gap-3 border-t border-[#f0eef6] pt-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#eeeaff] text-sm font-bold text-[#735bd4]">
-              {userEmail ? userEmail[0].toUpperCase() : "U"}
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            <div className="rounded-[22px] bg-[#E9EEE5] p-5 sm:p-7">
+              <p className="text-sm text-[#526B4B]">Total income</p>
+              <p className="mt-2 text-xl font-bold sm:text-3xl">
+                ₹1,20,000
+              </p>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-bold">{userEmail || "Your Account"}</p>
-              <p className="text-xs text-[#aaa5bb]">Personal workspace</p>
+            <div className="rounded-[22px] bg-[#F0E6DF] p-5 sm:p-7">
+              <p className="text-sm text-[#896454]">Total expenses</p>
+              <p className="mt-2 text-xl font-bold sm:text-3xl">
+                ₹35,750
+              </p>
             </div>
-            <button onClick={handleLogout} title="Sign out" className="text-[#aaa5bb] hover:text-red-500">
-              <LogOut size={19} />
-            </button>
-          </div>
-        </aside>
-
-        {menuOpen && (
-          <button
-            aria-label="Close menu"
-            onClick={() => setMenuOpen(false)}
-            className="fixed inset-0 z-40 bg-[#211b39]/30 backdrop-blur-sm lg:hidden"
-          />
-        )}
-
-        <section className="min-w-0 flex-1 px-1 py-3 sm:px-3 lg:px-5 lg:py-4">
-
-          <header className="mb-10 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <button onClick={() => setMenuOpen(true)} className="rounded-xl bg-white p-3 shadow-sm lg:hidden">
-                <Menu size={20} />
-              </button>
-              <div>
-                <p className="text-xs font-semibold text-[#a39eb4]">{new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).toUpperCase()}</p>
-                <h2 className="mt-1 text-2xl font-black sm:text-3xl">Your finances<span className="text-[#816be2]">.</span></h2>
-                <p className="mt-1 text-xs text-[#9691a7]">Your money, clearly organised.</p>
-              </div>
-            </div>
-            <button onClick={openAddModal} className="flex items-center gap-2 rounded-xl bg-[#765fd6] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-violet-200 hover:bg-[#654dc5]">
-              <Plus size={17} /> <span className="hidden sm:inline">Add transaction</span><span className="sm:hidden">Add</span>
-            </button>
-          </header>
-
-          {error && !modalOpen && (
-            <div className="mb-5 rounded-xl bg-red-50 p-4 text-sm text-red-600">{error}</div>
-          )}
-
-          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-bold tracking-[2.5px] text-[#aaa5bb]">YOUR FINANCIAL SPACE</p>
-              <h3 className="mt-1 text-xl font-black">Overview</h3>
-            </div>
-            <div className="flex items-center gap-2 rounded-xl border border-white bg-white px-4 py-3 text-xs font-semibold text-[#77728c] shadow-sm">
-              <CalendarDays size={15} /> All time
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="flex min-h-[400px] items-center justify-center">
-              <Loader2 className="animate-spin text-[#8068e5]" size={36} />
-            </div>
-          ) : (
-            <>
-              <div className="grid gap-5 xl:grid-cols-[1.65fr_1fr]">
-                <div className="group relative min-h-[290px] overflow-hidden rounded-[30px] bg-gradient-to-br from-[#6954ca] via-[#8170df] to-[#a594ed] p-7 text-white shadow-xl shadow-violet-200/60 sm:p-9">
-                  <div className="absolute -right-24 -top-32 h-96 w-96 rounded-full border border-white/15 transition-transform duration-700 group-hover:scale-110" />
-                  <div className="absolute -right-12 -top-20 h-72 w-72 rounded-full border border-white/15" />
-                  <div className="absolute bottom-8 right-8 hidden h-28 w-28 items-center justify-center rounded-full border border-white/20 bg-white/10 sm:flex">
-                    <Sparkles size={38} />
-                  </div>
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-2 text-sm font-medium text-white/75">
-                      <Wallet size={17} /> Net balance
-                      <span className="rounded-full border border-white/20 bg-white/15 px-2.5 py-1 text-[9px] font-bold">LIVE DATA</span>
-                    </div>
-                    <h3 className="mt-6 break-words text-4xl font-black tracking-tight sm:text-5xl">{money(balance)}</h3>
-                    <div className="mt-4 flex items-center gap-2 text-xs text-white/65">
-                      <TrendingUp size={15} /> Income minus expenses
-                    </div>
-                    <div className="mt-9 flex max-w-[370px] gap-12 border-t border-white/20 pt-5">
-                      <div>
-                        <p className="text-xs text-white/65">Total income</p>
-                        <p className="mt-1 text-xl font-bold">{money(income)}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-white/65">Total expenses</p>
-                        <p className="mt-1 text-xl font-bold">{money(expenses)}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-[25px] border border-white bg-white p-5 shadow-sm">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#e8f7ef] text-[#4eae81]"><ArrowDownRight size={22} /></div>
-                    <p className="mt-6 text-xs font-semibold text-[#a39eb4]">Total income</p>
-                    <p className="mt-1 break-all text-xl font-black">{money(income)}</p>
-                    <p className="mt-2 text-[10px] font-bold text-[#4eae81]">All transactions</p>
-                  </div>
-                  <div className="rounded-[25px] border border-white bg-white p-5 shadow-sm">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff0e9] text-[#e89173]"><ArrowUpRight size={22} /></div>
-                    <p className="mt-6 text-xs font-semibold text-[#a39eb4]">Total expenses</p>
-                    <p className="mt-1 break-all text-xl font-black">{money(expenses)}</p>
-                    <p className="mt-2 text-[10px] font-bold text-[#e89173]">All transactions</p>
-                  </div>
-                  <div className="col-span-2 rounded-[25px] border border-white bg-white p-5 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-semibold text-[#a39eb4]">Monthly savings</p>
-                        <p className="mt-1 text-2xl font-black">{money(monthlyIncome - monthlyExpenses)}</p>
-                      </div>
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eaf3ff] text-[#699bdb]"><Sparkles size={22} /></div>
-                    </div>
-                    <p className="mt-2 text-[10px] font-semibold text-[#a39eb4]">Current month · income minus expenses</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 grid gap-5 xl:grid-cols-[1.5fr_1fr]">
-                <div className="rounded-[28px] border border-white bg-white p-6 shadow-sm sm:p-7">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-bold tracking-[2px] text-[#aaa5bb]">YOUR ACTIVITY</p>
-                      <h3 className="mt-1 text-lg font-black">Recent transactions</h3>
-                      <p className="mt-1 text-xs text-[#a39eb4]">Your latest financial activity</p>
-                    </div>
-                    <button onClick={() => navigateTo("/transactions")} className="text-xs font-bold text-[#8068e5]">View all</button>
-                  </div>
-
-                  <div className="mt-6 space-y-3">
-                    {transactions.length === 0 ? (
-                      <div className="py-12 text-center">
-                        <Wallet className="mx-auto mb-3 text-[#b4a8db]" size={35} />
-                        <p className="font-bold text-[#49435d]">No transactions yet</p>
-                        <p className="mt-1 text-xs text-[#aaa5bb]">Add your first transaction to get started.</p>
-                        <button onClick={openAddModal} className="mt-4 rounded-xl bg-[#765fd6] px-5 py-3 text-xs font-bold text-white">Add transaction</button>
-                      </div>
-                    ) : (
-                      transactions.slice(0, 7).map((t) => {
-                        const Icon = categoryIcon(t.category);
-                        return (
-                          <div key={t.id} className="flex items-center gap-3 rounded-2xl p-3 transition hover:bg-[#faf9fd]">
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#f2effb] text-[#8068e5]"><Icon size={19} /></div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-bold">{t.title}</p>
-                              <p className="mt-1 text-[10px] text-[#aaa5bb]">{t.category} · {formattedDate(t.date)}</p>
-                            </div>
-                            <p className={`whitespace-nowrap text-sm font-black ${t.type === "income" ? "text-[#4eae81]" : "text-[#e89173]"}`}>
-                              {t.type === "income" ? "+" : "-"}{money(Number(t.amount))}
-                            </p>
-                            <button onClick={() => openEditModal(t)} title="Edit" className="p-2 text-[#aaa5bb] hover:text-[#8068e5]"><Pencil size={15} /></button>
-                            <button onClick={() => handleDelete(t.id)} title="Delete" className="p-2 text-[#aaa5bb] hover:text-red-500"><Trash2 size={15} /></button>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-
-                <div className="rounded-[28px] border border-white bg-white p-6 shadow-sm sm:p-7">
-                  <p className="text-[10px] font-bold tracking-[2px] text-[#aaa5bb]">SPENDING INSIGHTS</p>
-                  <h3 className="mt-1 text-lg font-black">Expense categories</h3>
-                  <p className="mt-1 text-xs text-[#a39eb4]">Based on your actual transactions</p>
-
-                  <div className="mt-7 space-y-6">
-                    {expenseCategories.length === 0 ? (
-                      <p className="py-8 text-center text-sm text-[#aaa5bb]">No expense data available yet.</p>
-                    ) : (
-                      expenseCategories.map((item, index) => {
-                        const Icon = categoryIcon(item.name);
-                        const percentage = expenses > 0 ? (item.amount / expenses) * 100 : 0;
-                        return (
-                          <div key={item.name}>
-                            <div className="mb-2 flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2 text-xs font-bold">
-                                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f7f5fb] text-[#8277b0]"><Icon size={16} /></span>
-                                {item.name}
-                              </div>
-                              <span className="text-xs font-semibold text-[#aaa5bb]">{money(item.amount)}</span>
-                            </div>
-                            <div className="h-2 overflow-hidden rounded-full bg-[#f0eef6]">
-                              <div style={{ width: `${percentage}%` }} className={`h-full rounded-full ${["bg-violet-400", "bg-orange-300", "bg-sky-400", "bg-emerald-400", "bg-pink-300"][index]}`} />
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </section>
-      </div>
-
-      {modalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#211b39]/40 p-4 backdrop-blur-sm">
-          <div className="my-auto w-full max-w-lg rounded-[28px] border border-white bg-white p-6 shadow-2xl sm:p-8">
-            <div className="mb-7 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-bold tracking-[2px] text-[#aaa5bb]">TRANSACTION MANAGER</p>
-                <h2 className="mt-1 text-2xl font-black">{editing ? "Edit transaction" : "New transaction"}</h2>
-              </div>
-              <button onClick={() => setModalOpen(false)} className="rounded-xl bg-[#f6f4fa] p-2 text-[#77728c]"><X size={20} /></button>
-            </div>
-
-            <form onSubmit={handleSave} className="space-y-5">
-              <div className="grid grid-cols-2 gap-3">
-                <button type="button" onClick={() => setType("expense")}
-                  className={`rounded-xl border py-3 text-sm font-bold ${type === "expense" ? "border-orange-200 bg-orange-50 text-orange-600" : "border-[#eeeaf5] text-[#aaa5bb]"}`}>
-                  Expense
-                </button>
-                <button type="button" onClick={() => setType("income")}
-                  className={`rounded-xl border py-3 text-sm font-bold ${type === "income" ? "border-emerald-200 bg-emerald-50 text-emerald-600" : "border-[#eeeaf5] text-[#aaa5bb]"}`}>
-                  Income
-                </button>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-xs font-bold text-[#49435d]">Transaction title</label>
-                <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Grocery shopping"
-                  className="w-full rounded-xl border border-[#e9e5f0] bg-[#fcfbfe] px-4 py-3.5 text-sm outline-none focus:border-[#9274e5]" />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-xs font-bold text-[#49435d]">Amount (₹)</label>
-                <input required type="number" min="0.01" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount"
-                  className="w-full rounded-xl border border-[#e9e5f0] bg-[#fcfbfe] px-4 py-3.5 text-sm outline-none focus:border-[#9274e5]" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-2 block text-xs font-bold text-[#49435d]">Category</label>
-                  <select value={category} onChange={(e) => setCategory(e.target.value)}
-                    className="w-full rounded-xl border border-[#e9e5f0] bg-[#fcfbfe] px-3 py-3.5 text-sm outline-none focus:border-[#9274e5]">
-                    {categories.map((item) => <option key={item}>{item}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-2 block text-xs font-bold text-[#49435d]">Date</label>
-                  <input required type="date" value={date} onChange={(e) => setDate(e.target.value)}
-                    className="w-full min-w-0 rounded-xl border border-[#e9e5f0] bg-[#fcfbfe] px-3 py-3.5 text-sm outline-none focus:border-[#9274e5]" />
-                </div>
-              </div>
-
-              {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>}
-
-              <button type="submit" disabled={saving}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#7653d6] py-4 text-sm font-bold text-white shadow-lg shadow-purple-200 disabled:opacity-60">
-                {saving && <Loader2 size={17} className="animate-spin" />}
-                {saving ? "Saving..." : editing ? "Save changes" : "Add transaction"}
-              </button>
-            </form>
           </div>
         </div>
-      )}
+      </section>
+
+      <section id="features" className="mx-auto max-w-7xl px-6 py-20 lg:px-12">
+
+        <p className="text-center text-xs font-bold tracking-[0.2em] text-[#526B4B]">
+          DESIGNED FOR EVERYDAY LIFE
+        </p>
+
+        <h2 className="mx-auto mt-5 max-w-3xl text-center text-4xl sm:text-6xl">
+          Everything you need.
+          <br />
+          Nothing you don't.
+        </h2>
+
+        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map(feature => (
+            <div key={feature.title} className="rounded-[26px] border border-[#E0E5DA] bg-white p-8 transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+
+              <div className="mb-8 grid h-12 w-12 place-items-center rounded-2xl bg-[#E9EEE5] text-[#526B4B]">
+                <feature.icon size={24} />
+              </div>
+
+              <h3 className="text-xl font-semibold">
+                {feature.title}
+              </h3>
+
+              <p className="mt-3 text-sm leading-relaxed text-[#687363]">
+                {feature.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-5 mb-12 rounded-[32px] bg-[#E4EDE0] px-6 py-20 text-center sm:mx-12">
+        <h2 className="text-4xl sm:text-6xl">
+          Small steps.
+          <br />
+          Better financial habits.
+        </h2>
+
+        <Link href="/login" className="mt-8 inline-flex items-center gap-3 rounded-full bg-[#526B4B] px-8 py-4 font-semibold text-white hover:bg-[#40583B]">
+          Start your journey <ArrowUpRight size={18} />
+        </Link>
+      </section>
+
+      <footer className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 border-t border-[#E0E5DA] px-6 py-8 text-sm text-[#687363] lg:px-12">
+        <span className="font-semibold">SpendWise.</span>
+        <span>Money, made clear.</span>
+        <span>© 2026 SpendWise</span>
+      </footer>
+
     </main>
   );
 }

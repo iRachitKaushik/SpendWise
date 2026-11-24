@@ -174,40 +174,40 @@ export default function BudgetsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f7fc] px-5 py-7 text-[#25243a] md:px-10">
+    <main className="min-h-screen bg-[#F7F6F2] px-5 py-7 text-[#252823] md:px-10">
       <div className="mx-auto max-w-6xl">
         <header className="mb-9 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Link href="/" className="rounded-xl border border-[#e9e7f1] bg-white p-3 hover:bg-[#f2efff]">
+            <Link href="/dashboard" className="rounded-xl border border-[#E9EEE5] bg-white p-3 hover:bg-[#E9EEE5]">
               <ArrowLeft size={19} />
             </Link>
             <div>
-              <p className="text-sm text-[#88869c]">SpendWise / Planning</p>
+              <p className="text-sm text-[#606C5C]">SpendWise / Planning</p>
               <h1 className="text-2xl font-bold tracking-tight">Budgets</h1>
             </div>
           </div>
           <button
             onClick={() => openForm()}
-            className="flex items-center gap-2 rounded-xl bg-[#7864df] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#7864df]/20 transition hover:bg-[#6651d0]"
+            className="flex items-center gap-2 rounded-xl bg-[#526B4B] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#526B4B]/20 transition hover:bg-[#526B4B]"
           >
             <Plus size={18} /> Create budget
           </button>
         </header>
 
         <div className="mb-7">
-          <p className="text-sm text-[#88869c]">Monthly overview</p>
+          <p className="text-sm text-[#606C5C]">Monthly overview</p>
           <h2 className="mt-1 text-xl font-bold">{monthLabel}</h2>
         </div>
 
         <section className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[
-            { label: "Total budget", value: money(totalBudget), icon: Wallet, color: "#7864df", bg: "#f0edff" },
+            { label: "Total budget", value: money(totalBudget), icon: Wallet, color: "#526B4B", bg: "#E9EEE5" },
             { label: "Total spent", value: money(totalSpent), icon: TrendingUp, color: "#e58a58", bg: "#fff2e9" },
             { label: "Remaining", value: money(remaining), icon: PiggyBank, color: "#35a88b", bg: "#e9f8f2" },
           ].map((item) => (
-            <div key={item.label} className="rounded-3xl border border-[#eeedf4] bg-white p-6 shadow-sm">
+            <div key={item.label} className="rounded-3xl border border-[#E9EEE5] bg-white p-6 shadow-sm">
               <div className="mb-5 flex items-center justify-between">
-                <p className="text-sm text-[#88869c]">{item.label}</p>
+                <p className="text-sm text-[#606C5C]">{item.label}</p>
                 <span className="rounded-xl p-3" style={{ background: item.bg, color: item.color }}>
                   <item.icon size={20} />
                 </span>
@@ -217,27 +217,27 @@ export default function BudgetsPage() {
           ))}
         </section>
 
-        <section className="rounded-3xl border border-[#eeedf4] bg-white p-6 shadow-sm md:p-8">
+        <section className="rounded-3xl border border-[#E9EEE5] bg-white p-6 shadow-sm md:p-8">
           <div className="mb-7 flex items-center justify-between">
             <div>
               <h3 className="text-lg font-bold">Category budgets</h3>
-              <p className="mt-1 text-sm text-[#9693a8]">Your spending against each monthly limit</p>
+              <p className="mt-1 text-sm text-[#606C5C]">Your spending against each monthly limit</p>
             </div>
-            <span className="rounded-xl bg-[#f2efff] px-3 py-2 text-xs font-semibold text-[#7864df]">
+            <span className="rounded-xl bg-[#E9EEE5] px-3 py-2 text-xs font-semibold text-[#606C5C]">
               {budgets.length} categories
             </span>
           </div>
 
           {loading ? (
-            <p className="py-12 text-center text-sm text-[#9693a8]">Loading budgets...</p>
+            <p className="py-12 text-center text-sm text-[#606C5C]">Loading budgets...</p>
           ) : budgets.length === 0 ? (
             <div className="py-14 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f2efff] text-[#7864df]">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#E9EEE5] text-[#606C5C]">
                 <PiggyBank size={29} />
               </div>
               <h4 className="font-semibold">No budgets yet</h4>
-              <p className="mt-2 text-sm text-[#9693a8]">Create your first category budget to start tracking spending.</p>
-              <button onClick={() => openForm()} className="mt-5 rounded-xl bg-[#7864df] px-5 py-3 text-sm font-semibold text-white">
+              <p className="mt-2 text-sm text-[#606C5C]">Create your first category budget to start tracking spending.</p>
+              <button onClick={() => openForm()} className="mt-5 rounded-xl bg-[#526B4B] px-5 py-3 text-sm font-semibold text-white">
                 Create your first budget
               </button>
             </div>
@@ -255,7 +255,7 @@ export default function BudgetsPage() {
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <h4 className="font-semibold">{budget.category}</h4>
-                        <p className="mt-1 text-xs text-[#9693a8]">
+                        <p className="mt-1 text-xs text-[#606C5C]">
                           {money(spent)} spent of {money(limit)}
                         </p>
                       </div>
@@ -264,21 +264,21 @@ export default function BudgetsPage() {
                           {over ? <AlertTriangle size={14} /> : <CheckCircle2 size={14} />}
                           {over ? "Over budget" : near ? "Almost there" : "On track"}
                         </span>
-                        <button onClick={() => openForm(budget)} className="rounded-lg p-2 text-[#89869c] hover:bg-[#f2efff] hover:text-[#7864df]">
+                        <button onClick={() => openForm(budget)} className="rounded-lg p-2 text-[#606C5C] hover:bg-[#E9EEE5] hover:text-[#606C5C]">
                           <Pencil size={15} />
                         </button>
-                        <button onClick={() => deleteBudget(budget.id)} className="rounded-lg p-2 text-[#aaa6b7] hover:bg-red-50 hover:text-red-500">
+                        <button onClick={() => deleteBudget(budget.id)} className="rounded-lg p-2 text-[#606C5C] hover:bg-red-50 hover:text-red-500">
                           <Trash2 size={15} />
                         </button>
                       </div>
                     </div>
-                    <div className="h-3 overflow-hidden rounded-full bg-[#f0eff5]">
+                    <div className="h-3 overflow-hidden rounded-full bg-[#E9EEE5]">
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ${over ? "bg-red-400" : near ? "bg-orange-400" : "bg-[#8b78e8]"}`}
+                        className={`h-full rounded-full transition-all duration-500 ${over ? "bg-red-400" : near ? "bg-orange-400" : "bg-[#526B4B]"}`}
                         style={{ width: `${Math.min(percent, 100)}%` }}
                       />
                     </div>
-                    <p className="mt-2 text-right text-xs text-[#9693a8]">
+                    <p className="mt-2 text-right text-xs text-[#606C5C]">
                       {Math.round(percent)}% used
                     </p>
                   </div>
@@ -291,7 +291,7 @@ export default function BudgetsPage() {
         {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
         {showForm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#211d38]/40 p-4 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#252823]/40 p-4 backdrop-blur-sm">
             <form onSubmit={saveBudget} className="w-full max-w-md rounded-3xl bg-white p-7 shadow-2xl">
               <div className="mb-6 flex items-center justify-between">
                 <h3 className="text-xl font-bold">{editing ? "Update budget" : "Create budget"}</h3>
@@ -304,7 +304,7 @@ export default function BudgetsPage() {
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 disabled={!!editing}
-                className="mb-5 w-full rounded-xl border border-[#e9e7f1] bg-white px-4 py-3 outline-none focus:border-[#7864df] disabled:bg-gray-100"
+                className="mb-5 w-full rounded-xl border border-[#E9EEE5] bg-white px-4 py-3 outline-none focus:border-[#526B4B] disabled:bg-gray-100"
               >
                 {categories.map((c) => <option key={c}>{c}</option>)}
               </select>
@@ -317,10 +317,10 @@ export default function BudgetsPage() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="e.g. 5000"
-                className="mb-5 w-full rounded-xl border border-[#e9e7f1] px-4 py-3 outline-none focus:border-[#7864df]"
+                className="mb-5 w-full rounded-xl border border-[#E9EEE5] px-4 py-3 outline-none focus:border-[#526B4B]"
               />
               {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
-              <button disabled={saving} className="w-full rounded-xl bg-[#7864df] py-3.5 font-semibold text-white transition hover:bg-[#6651d0] disabled:opacity-60">
+              <button disabled={saving} className="w-full rounded-xl bg-[#526B4B] py-3.5 font-semibold text-white transition hover:bg-[#526B4B] disabled:opacity-60">
                 {saving ? "Saving..." : editing ? "Update budget" : "Save budget"}
               </button>
             </form>

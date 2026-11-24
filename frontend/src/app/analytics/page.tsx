@@ -24,7 +24,7 @@ type Transaction = {
 };
 
 const COLORS = [
-  "#8068e5", "#65b99a", "#f2a47e",
+  "#526B4B", "#65b99a", "#f2a47e",
   "#70a9df", "#d68cbd", "#e3c76d",
   "#8c9de0", "#86c4cf",
 ];
@@ -131,8 +131,8 @@ export default function AnalyticsPage() {
     if (!active || !payload?.length) return null;
 
     return (
-      <div className="rounded-xl border border-[#eeeaf5] bg-white p-4 shadow-xl">
-        <p className="mb-2 text-xs font-bold text-[#89849c]">{label}</p>
+      <div className="rounded-xl border border-[#E9EEE5] bg-white p-4 shadow-xl">
+        <p className="mb-2 text-xs font-bold text-[#606C5C]">{label}</p>
         {payload.map((entry: any) => (
           <p key={entry.name} className="mt-1 text-xs font-bold" style={{ color: entry.color }}>
             {entry.name}: {money(entry.value)}
@@ -143,22 +143,22 @@ export default function AnalyticsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f7f6fb] px-4 py-6 text-[#29263d] sm:px-8 lg:px-12">
+    <main className="min-h-screen bg-[#F7F6F2] px-4 py-6 text-[#252823] sm:px-8 lg:px-12">
       <div className="mx-auto max-w-[1300px]">
 
         <header className="mb-9 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <button onClick={() => router.push("/")}
-              className="mb-4 flex items-center gap-2 text-xs font-bold text-[#8874cf]">
+            <button onClick={() => router.push("/dashboard")}
+              className="mb-4 flex items-center gap-2 text-xs font-bold text-[#606C5C]">
               <ArrowLeft size={15} /> Back to dashboard
             </button>
-            <p className="text-[10px] font-bold tracking-[2px] text-[#aaa5bb]">UNDERSTAND YOUR MONEY</p>
-            <h1 className="mt-1 text-3xl font-black">Analytics<span className="text-[#8068e5]">.</span></h1>
-            <p className="mt-1 text-sm text-[#9994aa]">Insights built from your actual transactions.</p>
+            <p className="text-[10px] font-bold tracking-[2px] text-[#606C5C]">UNDERSTAND YOUR MONEY</p>
+            <h1 className="mt-1 text-3xl font-black">Analytics<span className="text-[#606C5C]">.</span></h1>
+            <p className="mt-1 text-sm text-[#606C5C]">Insights built from your actual transactions.</p>
           </div>
 
           <div className="flex items-center gap-2 rounded-xl border border-white bg-white px-4 py-3 shadow-sm">
-            <CalendarDays size={16} className="text-[#8068e5]" />
+            <CalendarDays size={16} className="text-[#606C5C]" />
             <select value={period} onChange={(e) => setPeriod(e.target.value)}
               className="bg-transparent text-sm font-semibold outline-none">
               <option value="3">Last 3 months</option>
@@ -174,7 +174,7 @@ export default function AnalyticsPage() {
 
         {loading ? (
           <div className="flex min-h-[400px] items-center justify-center">
-            <Loader2 size={35} className="animate-spin text-[#8068e5]" />
+            <Loader2 size={35} className="animate-spin text-[#606C5C]" />
           </div>
         ) : (
           <>
@@ -182,7 +182,7 @@ export default function AnalyticsPage() {
               {[
                 { label: "Total income", value: income, icon: TrendingUp, color: "text-[#4eae81]", bg: "bg-[#e8f7ef]" },
                 { label: "Total expenses", value: expenses, icon: TrendingDown, color: "text-[#e89173]", bg: "bg-[#fff0e9]" },
-                { label: "Net savings", value: savings, icon: Wallet, color: "text-[#8068e5]", bg: "bg-[#eeeaff]" },
+                { label: "Net savings", value: savings, icon: Wallet, color: "text-[#606C5C]", bg: "bg-[#E9EEE5]" },
                 { label: "Savings rate", value: savingsRate, icon: Sparkles, color: "text-[#70a9df]", bg: "bg-[#eaf3ff]" },
               ].map((item) => {
                 const Icon = item.icon;
@@ -191,7 +191,7 @@ export default function AnalyticsPage() {
                     <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${item.bg} ${item.color}`}>
                       <Icon size={21} />
                     </div>
-                    <p className="mt-5 text-xs font-semibold text-[#aaa5bb]">{item.label}</p>
+                    <p className="mt-5 text-xs font-semibold text-[#606C5C]">{item.label}</p>
                     <p className="mt-1 break-all text-2xl font-black">
                       {item.label === "Savings rate"
                         ? `${savingsRate.toFixed(1)}%`
@@ -204,13 +204,13 @@ export default function AnalyticsPage() {
 
             <section className="mt-6 rounded-[27px] border border-white bg-white p-6 shadow-sm sm:p-8">
               <div className="mb-7">
-                <p className="text-[10px] font-bold tracking-[2px] text-[#aaa5bb]">CASH FLOW</p>
+                <p className="text-[10px] font-bold tracking-[2px] text-[#606C5C]">CASH FLOW</p>
                 <h2 className="mt-1 text-xl font-black">Income vs expenses</h2>
-                <p className="mt-1 text-xs text-[#aaa5bb]">Monthly financial activity</p>
+                <p className="mt-1 text-xs text-[#606C5C]">Monthly financial activity</p>
               </div>
 
               {transactions.length === 0 ? (
-                <p className="py-16 text-center text-sm text-[#aaa5bb]">Add transactions to generate your analytics.</p>
+                <p className="py-16 text-center text-sm text-[#606C5C]">Add transactions to generate your analytics.</p>
               ) : (
                 <div className="h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -225,9 +225,9 @@ export default function AnalyticsPage() {
                           <stop offset="95%" stopColor="#e99a79" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#f0eef6" />
-                      <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fill: "#aaa5bb", fontSize: 12 }} />
-                      <YAxis tickLine={false} axisLine={false} tick={{ fill: "#aaa5bb", fontSize: 11 }} tickFormatter={(v) => `₹${v >= 1000 ? `${v / 1000}k` : v}`} />
+                      <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#E9EEE5" />
+                      <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fill: "#526B4B", fontSize: 12 }} />
+                      <YAxis tickLine={false} axisLine={false} tick={{ fill: "#526B4B", fontSize: 11 }} tickFormatter={(v) => `₹${v >= 1000 ? `${v / 1000}k` : v}`} />
                       <Tooltip content={<CustomTooltip />} />
                       <Legend />
                       <Area type="monotone" dataKey="income" name="Income" stroke="#65b99a" strokeWidth={3} fill="url(#incomeGradient)" />
@@ -240,11 +240,11 @@ export default function AnalyticsPage() {
 
             <section className="mt-6 grid gap-6 xl:grid-cols-2">
               <div className="rounded-[27px] border border-white bg-white p-6 shadow-sm sm:p-8">
-                <p className="text-[10px] font-bold tracking-[2px] text-[#aaa5bb]">SPENDING DISTRIBUTION</p>
+                <p className="text-[10px] font-bold tracking-[2px] text-[#606C5C]">SPENDING DISTRIBUTION</p>
                 <h2 className="mt-1 text-xl font-black">Where your money goes</h2>
 
                 {categoryData.length === 0 ? (
-                  <p className="py-16 text-center text-sm text-[#aaa5bb]">No expense categories available.</p>
+                  <p className="py-16 text-center text-sm text-[#606C5C]">No expense categories available.</p>
                 ) : (
                   <>
                     <div className="mt-5 h-[240px]">
@@ -275,20 +275,20 @@ export default function AnalyticsPage() {
               </div>
 
               <div className="rounded-[27px] border border-white bg-white p-6 shadow-sm sm:p-8">
-                <p className="text-[10px] font-bold tracking-[2px] text-[#aaa5bb]">CATEGORY COMPARISON</p>
+                <p className="text-[10px] font-bold tracking-[2px] text-[#606C5C]">CATEGORY COMPARISON</p>
                 <h2 className="mt-1 text-xl font-black">Spending breakdown</h2>
 
                 {categoryData.length === 0 ? (
-                  <p className="py-16 text-center text-sm text-[#aaa5bb]">No expense data available.</p>
+                  <p className="py-16 text-center text-sm text-[#606C5C]">No expense data available.</p>
                 ) : (
                   <div className="mt-7 space-y-6">
                     {categoryData.map((item, index) => (
                       <div key={item.name}>
                         <div className="mb-2 flex justify-between gap-3 text-xs">
                           <span className="font-bold">{item.name}</span>
-                          <span className="font-semibold text-[#89849c]">{money(item.value)}</span>
+                          <span className="font-semibold text-[#606C5C]">{money(item.value)}</span>
                         </div>
-                        <div className="h-2.5 overflow-hidden rounded-full bg-[#f0eef6]">
+                        <div className="h-2.5 overflow-hidden rounded-full bg-[#E9EEE5]">
                           <div className="h-full rounded-full transition-all duration-700"
                             style={{ width: `${(item.value / maxCategory) * 100}%`, background: COLORS[index % COLORS.length] }} />
                         </div>
@@ -300,15 +300,15 @@ export default function AnalyticsPage() {
             </section>
 
             <section className="mt-6 rounded-[27px] border border-white bg-white p-6 shadow-sm sm:p-8">
-              <p className="text-[10px] font-bold tracking-[2px] text-[#aaa5bb]">MONTHLY PERFORMANCE</p>
+              <p className="text-[10px] font-bold tracking-[2px] text-[#606C5C]">MONTHLY PERFORMANCE</p>
               <h2 className="mt-1 text-xl font-black">Monthly comparison</h2>
 
               <div className="mt-7 h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#f0eef6" />
-                    <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fill: "#aaa5bb", fontSize: 12 }} />
-                    <YAxis tickLine={false} axisLine={false} tick={{ fill: "#aaa5bb", fontSize: 11 }} tickFormatter={(v) => `₹${v >= 1000 ? `${v / 1000}k` : v}`} />
+                    <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#E9EEE5" />
+                    <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fill: "#526B4B", fontSize: 12 }} />
+                    <YAxis tickLine={false} axisLine={false} tick={{ fill: "#526B4B", fontSize: 11 }} tickFormatter={(v) => `₹${v >= 1000 ? `${v / 1000}k` : v}`} />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend />
                     <Bar dataKey="income" name="Income" fill="#65b99a" radius={[6, 6, 0, 0]} />
@@ -320,14 +320,14 @@ export default function AnalyticsPage() {
 
             <section className="mt-6 grid gap-4 sm:grid-cols-2">
               <div className="rounded-[23px] border border-white bg-white p-6 shadow-sm">
-                <p className="text-xs font-semibold text-[#aaa5bb]">Average monthly expenses</p>
+                <p className="text-xs font-semibold text-[#606C5C]">Average monthly expenses</p>
                 <p className="mt-2 text-2xl font-black">{money(averageExpense)}</p>
-                <p className="mt-2 text-[10px] text-[#aaa5bb]">Across selected calendar months</p>
+                <p className="mt-2 text-[10px] text-[#606C5C]">Across selected calendar months</p>
               </div>
               <div className="rounded-[23px] border border-white bg-white p-6 shadow-sm">
-                <p className="text-xs font-semibold text-[#aaa5bb]">Recorded transactions</p>
+                <p className="text-xs font-semibold text-[#606C5C]">Recorded transactions</p>
                 <p className="mt-2 text-2xl font-black">{transactions.length}</p>
-                <p className="mt-2 text-[10px] text-[#aaa5bb]">All-time transaction count</p>
+                <p className="mt-2 text-[10px] text-[#606C5C]">All-time transaction count</p>
               </div>
             </section>
           </>
