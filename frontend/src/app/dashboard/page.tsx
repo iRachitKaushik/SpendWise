@@ -15,6 +15,7 @@ import {
 import { supabase } from "@/lib/supabase";
 
 type Transaction = {
+  payment_method?: "cash" | "upi" | null;
   id: string | number;
   title: string;
   amount: number;
@@ -49,6 +50,7 @@ const navItems = [
   { label: "Recurring", icon: Repeat, path: "/recurring" },
   { label: "Savings Goals", icon: Target, path: "/goals" },
   { label: "Smart Insights", icon: Brain, path: "/insights" },
+  { label: "Wallets", icon: Wallet, path: "/wallets" },
   { label: "Budgets", icon: Wallet, path: "/budgets" },
   { label: "Analytics", icon: ChartNoAxesCombined, path: "/analytics" },
 ];
@@ -69,6 +71,8 @@ export default function Home() {
   const [amount, setAmount] = useState("");
   const [type, setType] = useState<"income" | "expense">("expense");
   const [category, setCategory] = useState("Food & Dining");
+  const [paymentMethod, setPaymentMethod] =
+    useState<"cash" | "upi" | "">("");
   const [date, setDate] = useState(new Date().toLocaleDateString("en-CA"));
 
   const income = useMemo(
@@ -103,7 +107,7 @@ export default function Home() {
 
     const { data, error: fetchError } = await supabase
       .from("transactions")
-      .select("id, title, amount, type, category, date")
+      .select("id, title, amount, type, category, date,payment_method")
       .eq("user_id", authData.user.id)
       .order("date", { ascending: false });
 
@@ -131,6 +135,7 @@ export default function Home() {
     setAmount("");
     setType("expense");
     setCategory("Food & Dining");
+    setPaymentMethod("");
     setDate(new Date().toLocaleDateString("en-CA"));
     setError("");
     setModalOpen(true);
@@ -142,6 +147,7 @@ export default function Home() {
     setAmount(String(transaction.amount));
     setType(transaction.type);
     setCategory(transaction.category);
+    setPaymentMethod(transaction.payment_method ?? "");
     setDate(transaction.date);
     setError("");
     setModalOpen(true);
@@ -149,6 +155,29 @@ export default function Home() {
 
   async function handleSave(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (paymentMethod) {
+      const { data: wallet, error: walletError } =
+        await supabase.from("wallet_accounts")
+          .select("opening_date")
+          .eq("wallet_type", paymentMethod)
+          .maybeSingle();
+
+      if (walletError) {
+        setError(walletError.message);
+        return;
+      }
+
+      if (!wallet) {
+        setError("Add money to this wallet before linking transactions.");
+        return;
+      }
+
+      if (date < wallet.opening_date) {
+        setError("Transaction date cannot be before the wallet opening date.");
+        return;
+      }
+    }
+
     setSaving(true);
     setError("");
 
@@ -167,6 +196,7 @@ export default function Home() {
       type,
       category,
       date,
+      payment_method: paymentMethod || null,
     };
 
     if (
@@ -529,6 +559,30 @@ export default function Home() {
             </div>
 
             <form onSubmit={handleSave} className="space-y-5">
+              <div>
+                <label className="mb-2 block text-sm font-semibold">
+                  Payment method
+                </label>
+
+                <select
+                  value={paymentMethod}
+                  onChange={e => setPaymentMethod(
+                    e.target.value as "cash" | "upi" | ""
+                  )}
+                  className="w-full rounded-xl border border-[#DCE5D7] bg-[#FAFBF9] px-4 py-3 text-sm"
+                >
+                  <option value="">Not linked to wallet</option>
+                  <option value="cash">Cash wallet</option>
+                  <option value="upi">UPI wallet</option>
+                </select>
+
+                <p className="mt-2 text-xs text-[#687363]">
+                  {paymentMethod
+                    ? "This transaction will update your wallet balance."
+                    : "This transaction will not affect wallet balances."}
+                </p>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <button type="button" onClick={() => setType("expense")}
                   className={`rounded-xl border py-3 text-sm font-bold ${type === "expense" ? "border-orange-200 bg-orange-50 text-orange-600" : "border-[#E9EEE5] text-[#606C5C]"}`}>

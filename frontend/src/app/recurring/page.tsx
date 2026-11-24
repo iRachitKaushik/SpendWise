@@ -11,6 +11,7 @@ import {
 import { supabase } from "@/lib/supabase";
 
 type Recurring = {
+  payment_method?: "cash" | "upi" | null;
   id: string | number;
   user_id: string;
   title: string;
@@ -60,6 +61,7 @@ export default function RecurringPage() {
   const [editing, setEditing] = useState<Recurring | null>(null);
 
   const emptyForm = {
+    payment_method: "",
     title: "",
     amount: "",
     type: "expense",
@@ -70,6 +72,68 @@ export default function RecurringPage() {
   };
 
   const [form, setForm] = useState(emptyForm);
+
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [confirmError, setConfirmError] = useState("");
+
+  async function confirmDue(item: Recurring) {
+    if (confirmingId) return;
+
+    setConfirmError("");
+
+    if (!item.is_active || item.next_due_date > today()) {
+      setConfirmError("This transaction is not due yet.");
+      return;
+    }
+
+    if (!window.confirm(
+      `Confirm "${item.title}" for ₹${item.amount}? This will create a transaction and update its linked wallet.`
+    )) return;
+
+    setConfirmingId(String(item.id));
+
+    try {
+      if (item.payment_method) {
+        const { data: wallet, error: walletError } =
+          await supabase.from("wallet_accounts")
+            .select("opening_date")
+            .eq("wallet_type", item.payment_method)
+            .maybeSingle();
+
+        if (walletError) {
+          throw new Error(walletError.message);
+        }
+
+        if (!wallet) {
+          throw new Error("Initialize the selected wallet first.");
+        }
+
+        if (item.next_due_date < wallet.opening_date) {
+          throw new Error(
+            "The due date is before the wallet opening date. Review the recurring schedule."
+          );
+        }
+      }
+
+      const { error } = await supabase.rpc(
+        "confirm_recurring_transaction",
+        { p_recurring_id: item.id }
+      );
+
+      if (error) throw new Error(error.message);
+
+      await loadData();
+
+    } catch (err) {
+      setConfirmError(
+        err instanceof Error
+          ? err.message
+          : "Could not confirm transaction."
+      );
+    } finally {
+      setConfirmingId(null);
+    }
+  }
 
   async function loadData() {
     setLoading(true);
@@ -148,6 +212,7 @@ export default function RecurringPage() {
     setEditing(item);
     setForm({
       title: item.title,
+      payment_method: item.payment_method ?? "",
       amount: String(item.amount),
       type: item.type,
       category: item.category,
@@ -178,6 +243,7 @@ export default function RecurringPage() {
     setError("");
 
     const payload = {
+      payment_method: form.payment_method || null,
       user_id: userId,
       title: form.title.trim(),
       amount,
@@ -235,6 +301,12 @@ export default function RecurringPage() {
 
   return (
     <main className="min-h-screen bg-[#F7F6F2] text-[#252823]">
+      {confirmError && (
+        <div role="alert" className="mx-auto my-4 max-w-6xl rounded-xl bg-red-50 p-4 text-sm text-red-700">
+          {confirmError}
+        </div>
+      )}
+
       <div className="mx-auto max-w-7xl px-5 py-8 md:px-9">
         <button
           onClick={() => router.push("/dashboard")}
@@ -398,13 +470,28 @@ export default function RecurringPage() {
                     </div>
 
                     <div className="flex items-center gap-1">
-                      <button
+                      
+  <>
+    {item.is_active && item.next_due_date <= today() && (
+      <button
+        type="button"
+        disabled={confirmingId !== null}
+        onClick={() => void confirmDue(item)}
+        className="rounded-xl bg-[#526B4B] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#40583B] disabled:opacity-50"
+      >
+        {confirmingId === String(item.id)
+          ? "Confirming..."
+          : "Confirm transaction"}
+      </button>
+    )}
+<button
                         onClick={() => toggleStatus(item)}
                         title={item.is_active ? "Pause" : "Resume"}
                         className="rounded-xl p-2.5 text-[#606C5C] hover:bg-[#E9EEE5] hover:text-[#606C5C]"
                       >
                         {item.is_active ? <Pause size={17} /> : <Play size={17} />}
                       </button>
+</>
                       <button
                         onClick={() => openEdit(item)}
                         title="Edit"
@@ -455,6 +542,21 @@ export default function RecurringPage() {
             </div>
 
             <form onSubmit={saveRecurring} className="space-y-4">
+              <Field label="Payment method">
+                <select
+                  value={form.payment_method}
+                  onChange={e => setForm({
+                    ...form,
+                    payment_method: e.target.value
+                  })}
+                  className="w-full rounded-xl border border-[#DCE5D7] bg-[#FAFBF9] p-3 text-sm"
+                >
+                  <option value="">Not linked to wallet</option>
+                  <option value="cash">Cash wallet</option>
+                  <option value="upi">UPI wallet</option>
+                </select>
+              </Field>
+
               <Field label="Transaction title">
                 <input
                   required

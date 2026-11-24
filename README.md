@@ -135,3 +135,23 @@ product design, and modern web technologies.
 ---
 
 **SpendWise — Money, made clear.**
+
+## Version 1.1 — What's New
+
+- Cash and UPI wallet management.
+- Manual wallet funding.
+- Automatic transaction-based balance calculation.
+- Wallet-to-wallet transfers.
+- Wallet activity history and corrections.
+- Recurring transaction wallet integration.
+- Smart spreadsheet import with automatic column detection.
+- Automatic category and payment method suggestions.
+- Email-based password recovery.
+- Restricted wallet database write permissions.
+
+### Known Limitations
+
+- Wallet balances are manually tracked, not connected to banks.
+- Ambiguous spreadsheet entries require review.
+- Transaction edits and imports may produce negative wallet balances.
+- Password recovery requires configured Supabase redirect URLs.

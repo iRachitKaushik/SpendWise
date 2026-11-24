@@ -209,6 +209,15 @@ export default function LoginPage() {
                 </div>
               </div>
 
+              {!isSignup && (
+                <div className="text-right">
+                  <a href="/forgot-password"
+                    className="text-sm font-semibold text-[#526B4B] hover:underline">
+                    Forgot password?
+                  </a>
+                </div>
+              )}
+
               {error && (
                 <div role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700">
                   {error}

@@ -42,6 +42,8 @@ export async function proxy(request: NextRequest) {
   const isPublicPage =
     pathname === "/" ||
     pathname === "/welcome" ||
+    pathname === "/forgot-password" ||
+    pathname === "/auth/reset-callback" ||
     isLoginPage;
 
   function redirectTo(path: string) {

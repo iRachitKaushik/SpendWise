@@ -17,6 +17,7 @@ const navigation = [
   { label: "Recurring", icon: Repeat, path: "/recurring" },
   { label: "Savings Goals", icon: Target, path: "/goals" },
   { label: "Smart Insights", icon: Brain, path: "/insights" },
+  { label: "Wallets", icon: Wallet, path: "/wallets" },
   { label: "Budgets", icon: Wallet, path: "/budgets" },
   { label: "Analytics", icon: ChartNoAxesCombined, path: "/analytics" },
 ];
@@ -167,6 +168,7 @@ export function SpendWiseNavigation({
   const [open, setOpen] = useState(false);
 
   const pages = [
+    "/wallets",
     "/transactions", "/recurring", "/goals",
     "/insights", "/budgets", "/analytics", "/settings"
   ];

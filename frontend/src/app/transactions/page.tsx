@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabase";
 import * as XLSX from "xlsx";
 
 type Transaction = {
+  payment_method?: "cash" | "upi" | null;
   id: string | number;
   title: string;
   amount: number;
@@ -20,6 +21,7 @@ type Transaction = {
 };
 
 type ImportRow = {
+  payment_method?: "cash" | "upi" | null;
   title: string;
   amount: number;
   type: "income" | "expense";
@@ -67,6 +69,8 @@ export default function TransactionsPage() {
   const [amount, setAmount] = useState("");
   const [type, setType] = useState<"income" | "expense">("expense");
   const [category, setCategory] = useState("Food & Dining");
+  const [paymentMethod, setPaymentMethod] =
+    useState<"cash" | "upi" | "">("");
   const [date, setDate] = useState(new Date().toLocaleDateString("en-CA"));
 
   const load = useCallback(async () => {
@@ -80,7 +84,7 @@ export default function TransactionsPage() {
 
     const { data, error: fetchError } = await supabase
       .from("transactions")
-      .select("id,title,amount,type,category,date")
+      .select("id,title,amount,type,category,date,payment_method")
       .eq("user_id", auth.user.id)
       .order("date", { ascending: false });
 
@@ -130,6 +134,7 @@ export default function TransactionsPage() {
     setAmount(item ? String(item.amount) : "");
     setType(item?.type ?? "expense");
     setCategory(item?.category ?? "Food & Dining");
+    setPaymentMethod(item?.payment_method ?? "");
     setDate(item?.date ?? new Date().toLocaleDateString("en-CA"));
     setError("");
     setModal(true);
@@ -137,6 +142,29 @@ export default function TransactionsPage() {
 
   async function save(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (paymentMethod) {
+      const { data: wallet, error: walletError } =
+        await supabase.from("wallet_accounts")
+          .select("opening_date")
+          .eq("wallet_type", paymentMethod)
+          .maybeSingle();
+
+      if (walletError) {
+        setError(walletError.message);
+        return;
+      }
+
+      if (!wallet) {
+        setError("Add money to this wallet before linking transactions.");
+        return;
+      }
+
+      if (date < wallet.opening_date) {
+        setError("Transaction date cannot be before the wallet opening date.");
+        return;
+      }
+    }
+
     setSaving(true);
     setError("");
 
@@ -152,6 +180,7 @@ export default function TransactionsPage() {
       type,
       category,
       date,
+      payment_method: paymentMethod || null,
     };
 
     if (!payload.title || !Number.isFinite(payload.amount) ||
@@ -219,122 +248,452 @@ export default function TransactionsPage() {
 
   async function previewImport(file: File) {
     setError("");
+    setImportRows([]);
+    setShowImport(false);
 
     try {
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error("Please select a spreadsheet smaller than 10 MB.");
+      }
+
       const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
-      if (!sheet) throw new Error("The selected file is empty.");
+      const workbook = XLSX.read(buffer, {
+        type: "array",
+        cellDates: true
+      });
 
-      const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(
-        sheet,
-        { defval: "" }
-      );
+      const aliases = {
+        title: [
+          "title", "description", "transaction", "name",
+          "service or product", "service", "product",
+          "particulars", "merchant", "details", "narration",
+          "item", "purpose", "transaction description",
+          "expense name", "payee"
+        ],
+        amount: [
+          "amount", "money", "price", "cost", "value",
+          "transaction amount", "total", "amount inr",
+          "rupees", "amount rs"
+        ],
+        type: [
+          "type", "transaction type", "spend/added",
+          "spend added", "income expense", "credit debit",
+          "direction", "flow", "dr cr"
+        ],
+        category: [
+          "category", "group", "expense category",
+          "transaction category", "classification"
+        ],
+        date: [
+          "date", "transaction date", "payment date",
+          "timestamp", "day", "value date", "posting date"
+        ]
+      };
 
-      if (rawRows.length === 0) {
-        throw new Error("No transaction rows found in this file.");
+      function normalize(value: unknown) {
+        return String(value ?? "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim();
+      }
+
+      function findColumn(headers: string[], names: string[]) {
+        return headers.findIndex(header =>
+          names.some(name => normalize(name) === header)
+        );
+      }
+
+      function suggestCategory(title: string, type: string) {
+        const text = title.toLowerCase();
+
+        const rules: [RegExp, string][] = [
+          [/salary|stipend|payroll/, "Salary"],
+          [/food|pizza|burger|chai|tea|coffee|restaurant|lassi|chips|sandwich|momo|paratha|grocery|groceries|blinkit|zomato|swiggy|chaat|puri|dining/, "Food & Dining"],
+          [/metro|rickshaw|uber|ola|petrol|fuel|train|bus|taxi|transport/, "Transport"],
+          [/medicine|medical|doctor|hospital|pharmacy|fever/, "Health"],
+          [/college|school|book|tuition|course|exam|stationery|photocopy|education/, "Education"],
+          [/rent|electricity|water bill|housing/, "Housing"],
+          [/netflix|movie|cinema|gaming|game|spotify/, "Entertainment"],
+          [/shopping|clothes|shoes|amazon|flipkart|supplies/, "Shopping"]
+        ];
+
+        for (const [pattern, category] of rules) {
+          if (pattern.test(text) && categories.includes(category)) {
+            return category;
+          }
+        }
+
+        return categories.includes("Other")
+          ? "Other"
+          : "";
+      }
+
+      function validDate(y: number, m: number, d: number) {
+        if (y < 1900 || y > 2100) return "";
+
+        const check = new Date(Date.UTC(y, m - 1, d));
+
+        if (
+          check.getUTCFullYear() !== y ||
+          check.getUTCMonth() + 1 !== m ||
+          check.getUTCDate() !== d
+        ) return "";
+
+        return [
+          y,
+          String(m).padStart(2, "0"),
+          String(d).padStart(2, "0")
+        ].join("-");
+      }
+
+      function parseDate(value: unknown, dateOrder: string) {
+        if (value instanceof Date && !isNaN(value.getTime())) {
+          return validDate(
+            value.getFullYear(),
+            value.getMonth() + 1,
+            value.getDate()
+          );
+        }
+
+        if (typeof value === "number") {
+          const result = XLSX.SSF.parse_date_code(value, {
+            date1904: Boolean(workbook.Workbook?.WBProps?.date1904)
+          });
+
+          return result
+            ? validDate(result.y, result.m, result.d)
+            : "";
+        }
+
+        const text = String(value ?? "").trim();
+
+        const iso = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+
+        if (iso) {
+          return validDate(+iso[1], +iso[2], +iso[3]);
+        }
+
+        const parts = text.match(
+          /^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/
+        );
+
+        if (parts) {
+          const a = Number(parts[1]);
+          const b = Number(parts[2]);
+          let year = Number(parts[3]);
+
+          if (year < 100) year += 2000;
+
+          if (a > 12) return validDate(year, b, a);
+          if (b > 12) return validDate(year, a, b);
+
+          if (dateOrder === "MDY") {
+            return validDate(year, a, b);
+          }
+
+          if (dateOrder === "DMY") {
+            return validDate(year, b, a);
+          }
+
+          if (a === b) return validDate(year, a, b);
+
+          return "";
+        }
+
+        return "";
       }
 
       const seen = new Set<string>();
 
-      items.forEach((item) => {
+      items.forEach(item => {
         seen.add([
           item.title.trim().toLowerCase(),
           Number(item.amount),
           item.type,
           item.category,
-          item.date,
+          item.date
         ].join("|"));
       });
 
-      const parsed: ImportRow[] = rawRows.map((raw) => {
-        const row = Object.fromEntries(
-          Object.entries(raw).map(([key, value]) => [
-            key.trim().toLowerCase().replace(/\s+/g, "_"),
-            value,
-          ])
+      const { data: walletAccounts, error: walletError } =
+        await supabase.from("wallet_accounts")
+          .select("wallet_type,opening_date");
+
+      if (walletError) {
+        throw new Error(walletError.message);
+      }
+
+      const parsed: ImportRow[] = [];
+      let recognizedSheets = 0;
+
+      for (const sheetName of workbook.SheetNames) {
+        const sheet = workbook.Sheets[sheetName];
+
+        if (!sheet || !sheet["!ref"]) continue;
+
+        const range = XLSX.utils.decode_range(sheet["!ref"]);
+
+        if (
+          range.e.r - range.s.r > 5000 ||
+          range.e.c - range.s.c > 100
+        ) {
+          throw new Error("Spreadsheet exceeds the supported row or column limit.");
+        }
+
+        const rows = XLSX.utils.sheet_to_json<unknown[]>(
+          sheet,
+          {
+            header: 1,
+            defval: "",
+            raw: true
+          }
         );
 
-        const title = String(row.title ?? "").trim();
-        const amount = Number(String(row.amount ?? "").replace(/[₹,\s]/g, ""));
-        const transactionType = String(row.type ?? "").trim().toLowerCase();
-        const category = String(row.category ?? "").trim();
-        let date = "";
-        const rawDate = row.date;
+        let headerIndex = -1;
 
-        if (rawDate instanceof Date && !Number.isNaN(rawDate.getTime())) {
-          date = [
-            rawDate.getFullYear(),
-            String(rawDate.getMonth() + 1).padStart(2, "0"),
-            String(rawDate.getDate()).padStart(2, "0"),
-          ].join("-");
-        } else if (typeof rawDate === "number") {
-          const parsedDate = XLSX.SSF.parse_date_code(rawDate);
-          if (parsedDate) {
-            date = [
-              parsedDate.y,
-              String(parsedDate.m).padStart(2, "0"),
-              String(parsedDate.d).padStart(2, "0"),
-            ].join("-");
+        let columns = {
+          title: -1,
+          amount: -1,
+          type: -1,
+          category: -1,
+          date: -1
+        };
+
+        for (let i = 0; i < Math.min(rows.length, 30); i++) {
+          const headers = rows[i].map(normalize);
+
+          const candidate = {
+            title: findColumn(headers, aliases.title),
+            amount: findColumn(headers, aliases.amount),
+            type: findColumn(headers, aliases.type),
+            category: findColumn(headers, aliases.category),
+            date: findColumn(headers, aliases.date)
+          };
+
+          if (
+            candidate.title >= 0 &&
+            candidate.amount >= 0 &&
+            candidate.date >= 0
+          ) {
+            columns = candidate;
+            headerIndex = i;
+            break;
           }
-        } else {
-          const dateText = String(rawDate ?? "").trim();
-          if (/^\d{4}-\d{2}-\d{2}$/.test(dateText)) {
-            date = dateText;
-          } else if (dateText) {
-            const parsedDate = new Date(dateText);
-            if (!Number.isNaN(parsedDate.getTime())) {
-              date = [
-                parsedDate.getFullYear(),
-                String(parsedDate.getMonth() + 1).padStart(2, "0"),
-                String(parsedDate.getDate()).padStart(2, "0"),
-              ].join("-");
+        }
+
+        if (headerIndex < 0) continue;
+
+        recognizedSheets++;
+
+        const paymentColumn = findColumn(
+          rows[headerIndex].map(normalize),
+          [
+            "payment method",
+            "payment mode",
+            "mode of payment",
+            "payment",
+            "mode",
+            "paid via"
+          ]
+        );
+
+        const data = rows.slice(headerIndex + 1);
+
+        let hasMDY = false;
+        let hasDMY = false;
+
+        for (const row of data) {
+          const match = String(row[columns.date] ?? "")
+            .match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-]\d{2,4}$/);
+
+          if (match) {
+            if (+match[1] > 12) hasDMY = true;
+            if (+match[2] > 12) hasMDY = true;
+          }
+        }
+
+        const dateOrder =
+          hasMDY && !hasDMY ? "MDY" :
+          hasDMY && !hasMDY ? "DMY" : "";
+
+        for (const row of data) {
+          if (row.every(value => String(value ?? "").trim() === "")) {
+            continue;
+          }
+
+          const title = String(row[columns.title] ?? "").trim();
+
+          const amountText = String(row[columns.amount] ?? "")
+            .trim()
+            .replace(/[₹,\s]/g, "")
+            .replace(/^(INR|Rs\.?)/i, "")
+            .replace(/^\((.+)\)$/, "-$1");
+
+          const signedAmount = amountText
+            ? Number(amountText)
+            : NaN;
+
+          const amount = Math.abs(signedAmount);
+
+          const rawType = normalize(row[columns.type]);
+
+          let type: "income" | "expense" = "expense";
+          let reason = "";
+
+          if ([
+            "income", "added", "add", "credit",
+            "received", "deposit", "cr"
+          ].includes(rawType)) {
+            type = "income";
+
+            if (signedAmount < 0) {
+              reason = "Negative income requires review";
+            }
+
+          } else if ([
+            "expense", "spend", "spent", "debit",
+            "purchase", "paid", "withdrawal", "dr"
+          ].includes(rawType)) {
+            type = "expense";
+
+          } else {
+            reason = rawType
+              ? `Review transaction type: ${rawType}`
+              : "Missing transaction type";
+          }
+
+          const rawCategory = String(
+            row[columns.category] ?? ""
+          ).trim();
+
+          const matchedCategory = categories.find(
+            category => normalize(category) === normalize(rawCategory)
+          );
+
+          const category = matchedCategory ||
+            suggestCategory(title, type);
+
+          const date = parseDate(
+            row[columns.date],
+            dateOrder
+          );
+
+          if (!title) reason = "Missing transaction title";
+          else if (!Number.isFinite(amount) || amount <= 0) {
+            reason = "Invalid amount";
+          }
+          else if (!date) {
+            reason = "Invalid or ambiguous date";
+          }
+          else if (!category) {
+            reason = "Missing category";
+          }
+
+          const rawPayment = normalize(
+            row[paymentColumn]
+          );
+
+          let paymentMethod: "cash" | "upi" | null = null;
+
+          if (["cash", "physical cash", "cash payment"].includes(rawPayment)) {
+            paymentMethod = "cash";
+          } else if ([
+            "upi", "gpay", "g pay", "google pay",
+            "phonepe", "phone pe", "bhim", "upi payment"
+          ].includes(rawPayment)) {
+            paymentMethod = "upi";
+          }
+
+          let walletNote = "";
+
+          if (paymentMethod) {
+            const wallet = (walletAccounts ?? []).find(
+              account => account.wallet_type === paymentMethod
+            );
+
+            if (!wallet || date < wallet.opening_date) {
+              walletNote = "Wallet not linked: missing wallet or older transaction";
+              paymentMethod = null;
             }
           }
+
+          const key = [
+            title.toLowerCase(),
+            amount,
+            type,
+            category,
+            date
+          ].join("|");
+
+          if (reason) {
+            parsed.push({
+              title, amount, type, category, date,
+              status: "invalid",
+              reason
+            });
+
+          } else if (seen.has(key)) {
+            parsed.push({
+              title, amount, type, category, date,
+              status: "duplicate",
+              reason: "Already exists"
+            });
+
+          } else {
+            seen.add(key);
+
+            parsed.push({
+              title, amount, type, category, date,
+              payment_method: paymentMethod,
+              status: "ready",
+              reason: [
+                matchedCategory
+                  ? "Ready to import"
+                  : "Suggested category - review before import",
+                paymentMethod
+                  ? `Wallet: ${paymentMethod.toUpperCase()}`
+                  : walletNote
+              ].filter(Boolean).join(" | ")
+            });
+          }
         }
+      }
 
-        let reason = "";
+      if (!recognizedSheets || !parsed.length) {
+        throw new Error(
+          "No recognizable transaction table found. The file needs date, amount and description columns."
+        );
+      }
 
-        if (!title) reason = "Missing title";
-        else if (!Number.isFinite(amount) || amount <= 0) reason = "Invalid amount";
-        else if (transactionType !== "income" && transactionType !== "expense") {
-          reason = "Type must be income or expense";
-        } else if (!categories.includes(category)) {
-          reason = "Unknown category";
-        } else if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-          reason = "Invalid date";
-        }
+      const linkedCount = parsed.filter(
+        row => row.status === "ready" && row.payment_method
+      ).length;
 
-        const normalizedType = transactionType as "income" | "expense";
-        const key = [title.toLowerCase(), amount, normalizedType, category, date].join("|");
+      const linkWallets = linkedCount > 0 && window.confirm(
+        `${linkedCount} transactions can be linked to Cash or UPI wallets. ` +
+        "This will change your wallet balances. " +
+        "Only continue if these transactions are not already reflected in your wallet funding. " +
+        "Press Cancel to import without wallet linking."
+      );
 
-        if (reason) {
-          return {
-            title, amount, type: normalizedType, category, date,
-            status: "invalid", reason,
-          };
-        }
-
-        if (seen.has(key)) {
-          return {
-            title, amount, type: normalizedType, category, date,
-            status: "duplicate", reason: "Already exists",
-          };
-        }
-
-        seen.add(key);
+      setImportRows(parsed.map(row => {
+        if (linkWallets || !row.payment_method) return row;
 
         return {
-          title, amount, type: normalizedType, category, date,
-          status: "ready", reason: "Ready to import",
+          ...row,
+          payment_method: null,
+          reason: row.reason.replace(/Wallet: (CASH|UPI)/g, "Wallet not linked")
         };
-      });
-
-      setImportRows(parsed);
+      }));
       setShowImport(true);
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not read this file.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not read this spreadsheet."
+      );
     }
   }
 
@@ -356,7 +715,8 @@ export default function TransactionsPage() {
     const { error: insertError } = await supabase
       .from("transactions")
       .insert(
-        readyRows.map(({ title, amount, type, category, date }) => ({
+        readyRows.map(({ title, amount, type, category, date, payment_method }) => ({
+          payment_method: payment_method ?? null,
           title, amount, type, category, date,
           user_id: auth.user!.id,
         }))
@@ -401,7 +761,7 @@ export default function TransactionsPage() {
               <Upload size={15} /> Import
               <input
                 type="file"
-                accept=".csv,.xlsx,.xls"
+                accept=".csv,.xlsx,.xls,.numbers,.ods"
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
@@ -626,6 +986,30 @@ export default function TransactionsPage() {
               <button onClick={() => setModal(false)}><X size={21} /></button>
             </div>
             <form onSubmit={save} className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-semibold">
+                  Payment method
+                </label>
+
+                <select
+                  value={paymentMethod}
+                  onChange={e => setPaymentMethod(
+                    e.target.value as "cash" | "upi" | ""
+                  )}
+                  className="w-full rounded-xl border border-[#DCE5D7] bg-[#FAFBF9] px-4 py-3 text-sm"
+                >
+                  <option value="">Not linked to wallet</option>
+                  <option value="cash">Cash wallet</option>
+                  <option value="upi">UPI wallet</option>
+                </select>
+
+                <p className="mt-2 text-xs text-[#687363]">
+                  {paymentMethod
+                    ? "This transaction will update your wallet balance."
+                    : "This transaction will not affect wallet balances."}
+                </p>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 {(["expense", "income"] as const).map((v) => (
                   <button key={v} type="button" onClick={() => setType(v)}
